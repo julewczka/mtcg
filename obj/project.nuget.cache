@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "hjzR7yCZ9fp0Z3GA7odeKtXB69wPWvMoBmHV/f+A92NQ0PZ6J4JIOK/+4RpGqZ6qYD3//7yT3w4yxY6eaHdKCQ==",
+  "success": true,
+  "projectFilePath": "/home/julewczka/RiderProjects/mtcg/mtcg.csproj",
+  "expectedPackageFiles": [
+    "/home/julewczka/.nuget/packages/npgsql/5.0.1.1/npgsql.5.0.1.1.nupkg.sha512",
+    "/home/julewczka/.nuget/packages/system.runtime.compilerservices.unsafe/4.6.0/system.runtime.compilerservices.unsafe.4.6.0.nupkg.sha512"
+  ],
+  "logs": []
+}

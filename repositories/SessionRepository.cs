@@ -3,12 +3,36 @@ using Npgsql;
 
 namespace mtcg.repositories
 {
-    public class SessionRepository
+    public static class SessionRepository
     {
-
         private const string Credentials =
             "Server=127.0.0.1;Port=5432;Database=mtcg-db;User Id=mtcg-user;Password=mtcg-pw";
-        
+
+        public static bool LogLogin(string username, DateTime timestamp)
+        {
+            var success = false;
+            try
+            {
+                using (var connection = new NpgsqlConnection(Credentials))
+                {
+                    using var query =
+                        new NpgsqlCommand("insert into logins(username, timestamp) values (@username, @timestamp)",
+                            connection);
+                    query.Parameters.AddWithValue("username", username);
+                    query.Parameters.AddWithValue("timestamp", timestamp);
+                    connection.Open();
+                    if (query.ExecuteNonQuery() > 0) success = true;
+                }
+            }
+            catch (PostgresException)
+            {
+                Console.WriteLine("Log to Session error!");
+                success = false;
+            }
+
+            return success;
+        }
+
         public static User GetUserByName(string username)
         {
             var user = new User();
@@ -28,10 +52,9 @@ namespace mtcg.repositories
                     }
                 }
             }
-            catch (PostgresException pe)
+            catch (PostgresException)
             {
-                Console.WriteLine(pe.Message);
-                Console.WriteLine(pe.StackTrace);
+                return null;
             }
 
             return user;

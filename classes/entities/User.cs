@@ -3,7 +3,6 @@ using BIF.SWE1.Interfaces;
 
 namespace mtcg
 {
-    //TODO: Properties or fields
     public class User : IResource
     {
 

@@ -9,6 +9,12 @@ DROP TABLE "user";
 
 CREATE TYPE element_type AS ENUM ('normal', 'water', 'fire');
 
+CREATE TABLE logins (
+    uuid UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    username TEXT NOT NULL UNIQUE,
+    timestamp TIMESTAMP NOT NULL
+);
+
 CREATE TABLE "user" (
     uuid UUID PRIMARY KEY DEFAULT uuid_generate_v4(), 
     username TEXT NOT NULL UNIQUE, 

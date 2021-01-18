@@ -4,21 +4,44 @@ using System.Text;
 using System.Text.Json;
 using BIF.SWE1.Interfaces;
 using mtcg.repositories;
+using Npgsql;
 
 namespace mtcg.controller
 {
     public static class RequestController
     {
+        //TODO: Catch all exceptions
         public static Response HandleRequest(string protocol, string[] resource, string payload)
         {
-            return protocol switch
+            var response = new Response();
+            try
             {
-                "GET" => Get(resource),
-                "POST" => Post(resource[0], payload),
-                "PUT" => Put(resource, payload),
-                "DELETE" => Delete(resource),
-                _ => ResponseTypes.BadRequest
-            };
+                response = protocol switch
+                {
+                    "GET" => Get(resource),
+                    "POST" => Post(resource[0], payload),
+                    "PUT" => Put(resource, payload),
+                    "DELETE" => Delete(resource),
+                    _ => ResponseTypes.BadRequest
+                };
+            }
+            catch (PostgresException pe)
+            {
+                Console.WriteLine(pe.Message);
+                Console.WriteLine(pe.StackTrace);
+            }
+            catch (JsonException je)
+            {
+                Console.WriteLine(je.Message);
+                Console.WriteLine(je.StackTrace);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
+            }
+
+            return response;
         }
 
         /**
@@ -53,7 +76,7 @@ namespace mtcg.controller
             return resource switch
             {
                 "users" => UserController.Post(payload),
-                "sessions" => SessionController.Post(payload),
+                "sessions" => SessionController.Login(payload),
                 "packages" => PackageController.Post(payload),
                 "/" => ResponseTypes.MethodNotAllowed,
                 _ => ResponseTypes.NotFoundRequest
@@ -86,7 +109,6 @@ namespace mtcg.controller
 
         /**
          * check if string is valid JSON
-         * TODO: only works for User-Class atm!
          */
         private static bool IsValidJson(string resource, string json)
         {

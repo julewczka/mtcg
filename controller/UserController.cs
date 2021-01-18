@@ -10,54 +10,25 @@ namespace mtcg.controller
     {
         public static Response Put(string username, string payload)
         {
-            var response = new Response() {ContentType = "text/plain"};
-            try
-            {
-                var updateUser = JsonSerializer.Deserialize<User>(payload);
-                if (updateUser != null)
-                {
-                    updateUser.Username = username;
-                    UserRepository.UpdateUser(updateUser);
-                }
+            var updateUser = JsonSerializer.Deserialize<User>(payload);
+            if (updateUser == null) return ResponseTypes.BadRequest;
+            updateUser.Username = username;
 
-                response.StatusCode = 201;
-                response.SetContent("Updated");
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.Message);
-                Console.WriteLine(e.StackTrace);
-
-                return ResponseTypes.BadRequest;
-            }
-
-            return response;
+            return UserRepository.UpdateUser(updateUser)
+                ? new Response("Updated") {ContentType = "text/plain", StatusCode = 201}
+                : ResponseTypes.BadRequest;
         }
 
         public static Response Post(string payload)
         {
-            var response = new Response() {ContentType = "text/plain"};
-            try
-            {
-                var createUser = JsonSerializer.Deserialize<User>(payload);
-                if (string.IsNullOrEmpty(createUser?.Username)) return ResponseTypes.BadRequest;
-                createUser.Name = createUser.Username;
-                createUser.Token = createUser.Username + "-mtcgToken";
-                
-                UserRepository.InsertUser(createUser);
+            var createUser = JsonSerializer.Deserialize<User>(payload);
+            if (createUser == null) return ResponseTypes.BadRequest;
+            createUser.Name = createUser.Username;
+            createUser.Token = createUser.Username + "-mtcgToken";
 
-                response.StatusCode = 201;
-                response.SetContent("Created");
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.Message);
-                Console.WriteLine(e.StackTrace);
-
-                return ResponseTypes.BadRequest;
-            }
-
-            return response;
+            return UserRepository.InsertUser(createUser)
+                ? new Response("Created") {ContentType = "text/plain", StatusCode = 201}
+                : ResponseTypes.BadRequest;
         }
 
         public static Response Get(IReadOnlyList<string> resource)
@@ -104,23 +75,9 @@ namespace mtcg.controller
 
         public static Response Delete(string uuid)
         {
-            var response = new Response() {ContentType = "text/plain"};
-            try
-            {
-                UserRepository.DeleteUser(uuid);
-
-                response.StatusCode = 200;
-                response.SetContent("OK");
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.Message);
-                Console.WriteLine(e.StackTrace);
-
-                return ResponseTypes.BadRequest;
-            }
-
-            return response;
+            return UserRepository.DeleteUser(uuid)
+                ? new Response("OK") {ContentType = "text/plain", StatusCode = 200}
+                : ResponseTypes.BadRequest;
         }
     }
 }

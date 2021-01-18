@@ -45,11 +45,9 @@ namespace mtcg.repositories
             }
             catch (PostgresException pe)
             {
-                Console.WriteLine(pe.Message);
-                Console.WriteLine(pe.StackTrace);
+                retrievedUsers = new List<User>();
             }
-
-
+            
             return retrievedUsers;
         }
 
@@ -60,7 +58,6 @@ namespace mtcg.repositories
         public static User SelectUser(string username)
         {
             var user = new User();
-
             try
             {
                 using (var connection = new NpgsqlConnection(Credentials))
@@ -84,22 +81,22 @@ namespace mtcg.repositories
                 }
             }
 
-            catch (PostgresException pe)
+            catch (PostgresException)
             {
-                Console.WriteLine(pe.Message);
-                Console.WriteLine(pe.StackTrace);
+                return null;
             }
 
             return user;
         }
-
-        //TODO: Add return value for success or error
-        public static void InsertUser(User user)
+        
+        public static bool InsertUser(User user)
         {
+            var success = false;
             try
             {
                 using (var connection = new NpgsqlConnection(Credentials))
                 {
+                    var insertCount = 0;
                     using var query =
                         new NpgsqlCommand(
                             "insert into \"user\"(username, password, name, token) values(@username, @password, @name, @token)",
@@ -110,57 +107,64 @@ namespace mtcg.repositories
                     query.Parameters.AddWithValue("name", user.Username);
                     query.Parameters.AddWithValue("token", user.Token);
                     connection.Open();
-                    query.ExecuteReader();
+                    insertCount = query.ExecuteNonQuery();
+                    if (insertCount > 0) success = true;
                 }
             }
-            catch (PostgresException pe)
+            catch (PostgresException)
             {
-                Console.WriteLine(pe.Message);
-                Console.WriteLine(pe.StackTrace);
+                success = false;
             }
-        }
 
-        //TODO: Add return value for success or error
-        public static void UpdateUser(User user)
+            return success;
+        }
+        
+        public static bool UpdateUser(User user)
         {
+            var success = false;
             using var connection = new NpgsqlConnection(Credentials);
             try
             {
+                var updateCount = 0;
                 using var query =
                     new NpgsqlCommand(
-                        "update \"user\" set name = @name, bio = @bio, image = @image, token = @token where username = @username",
+                        "update \"user\" set name = @name, bio = @bio, image = @image where username = @username",
                         connection);
                 query.Parameters.AddWithValue("username", user.Username);
                 query.Parameters.AddWithValue("name", user.Name);
                 query.Parameters.AddWithValue("bio", user.Bio);
                 query.Parameters.AddWithValue("image", user.Image);
-                query.Parameters.AddWithValue("token", user.Token);
                 connection.Open();
-                query.ExecuteReader();
+                updateCount = query.ExecuteNonQuery();
+                if (updateCount > 0) success = true;
             }
-            catch (PostgresException pe)
+            catch (PostgresException)
             {
-                Console.WriteLine(pe.Message);
-                Console.WriteLine(pe.StackTrace);
+                success = false;
             }
-        }
 
-        //TODO: Add return value for success or error
-        public static void DeleteUser(string uuid)
+            return success;
+        }
+        
+        public static bool DeleteUser(string uuid)
         {
+            var success = false;
             using var connection = new NpgsqlConnection(Credentials);
             try
             {
+                var deleteCount = 0;
                 using var query = new NpgsqlCommand("delete from \"user\" where uuid::text = @uuid", connection);
                 query.Parameters.AddWithValue("uuid", uuid);
                 connection.Open();
-                query.ExecuteReader();
+                deleteCount = query.ExecuteNonQuery();
+                if (deleteCount > 0) success = true;
             }
-            catch (PostgresException pe)
+            catch (PostgresException)
             {
-                Console.WriteLine(pe.Message);
-                Console.WriteLine(pe.StackTrace);
+                success = false;
             }
+
+            return success;
         }
     }
 }

@@ -7,6 +7,8 @@ DROP TABLE deck;
 DROP TABLE card;
 DROP TABLE "user";
 
+CREATE TYPE element_type AS ENUM ('normal', 'water', 'fire');
+
 CREATE TABLE "user" (
     uuid UUID PRIMARY KEY DEFAULT uuid_generate_v4(), 
     username TEXT NOT NULL UNIQUE, 
@@ -22,7 +24,7 @@ CREATE TABLE card (
   uuid UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name TEXT NOT NULL,
   card_type TEXT NOT NULL,
-  element_type TEXT NOT NULL,
+  element_type element_type NOT NULL,
   damage FLOAT NOT NULL
 );
 

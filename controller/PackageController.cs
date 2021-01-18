@@ -1,24 +1,22 @@
 using System;
 using System.Text.Json;
+using mtcg.repositories;
 
 namespace mtcg.controller
 {
-    public class PackageController
+    public static class PackageController
     {
-
-        //TODO: Create Package - Create 4 Cards
         public static Response Post(string payload)
         {
             var response = new Response() {ContentType = "text/plain"};
             try
             {
-                var json = JsonSerializer.Deserialize<Card[]>(payload);
-                foreach (var card in json)
-                {
-                    Console.WriteLine($"Card-ID:{card.Uuid}");
-                    Console.WriteLine($"Card-Type:{card.CardType}");
-                    Console.WriteLine($"Card-Type:{card.Damage}");
-                }
+                var cards = JsonSerializer.Deserialize<Card[]>(payload);
+                PackageRepository.CreatePackage(cards);
+                
+                Console.WriteLine("Does the Code reach here?");
+                response.StatusCode = 201;
+                response.SetContent("Created");
             }
             catch (Exception e)
             {
@@ -28,7 +26,7 @@ namespace mtcg.controller
                 return ResponseTypes.BadRequest;
             }
      
-            return new Response();
+            return response;
         }
     }
 }

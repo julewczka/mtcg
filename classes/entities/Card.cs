@@ -2,16 +2,15 @@
 {
     public class Card
     {
-        private int Id { get; set; }
-        protected double Damage { get; private set; }
-        protected string CardType { get; private set; }
-        protected ElementType ElementType { get; private set; }
+        public string Uuid { get; set; }
+        public double Damage { get; private set; }
+        public string CardType { get; private set; }
 
-        public Card(double damage, string cardType, ElementType elementType)
+        public Card(string uuid, double damage, string cardType)
         {
+            Uuid = uuid;
             Damage = damage;
             CardType = cardType;
-            ElementType = elementType;
         }
     }
 }

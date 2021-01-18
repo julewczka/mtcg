@@ -48,12 +48,13 @@ namespace mtcg.controller
          */
         private static Response Post(string resource, string payload)
         {
-            if (!IsValidJson(payload)) return ResponseTypes.BadRequest;
+            if (!IsValidJson(resource, payload)) return ResponseTypes.BadRequest;
             //TODO: Session for Login
             return resource switch
             {
                 "users" => UserController.Post(payload),
                 "sessions" => SessionController.Post(payload),
+                "packages" => PackageController.Post(payload),
                 "/" => ResponseTypes.MethodNotAllowed,
                 _ => ResponseTypes.NotFoundRequest
             };
@@ -63,7 +64,7 @@ namespace mtcg.controller
         private static Response Put(IReadOnlyList<string> resource, string payload)
         {
 
-            if (resource.Count < 2 && !IsValidJson(payload)) return ResponseTypes.BadRequest;
+            if (resource.Count < 2 && !IsValidJson(resource[0],payload)) return ResponseTypes.BadRequest;
 
             return resource[0] switch
             {
@@ -87,11 +88,20 @@ namespace mtcg.controller
          * check if string is valid JSON
          * TODO: only works for User-Class atm!
          */
-        private static bool IsValidJson(string json)
+        private static bool IsValidJson(string resource, string json)
         {
             try
             {
-                JsonSerializer.Deserialize<User>(json);
+                switch (resource)
+                {
+                    case "users": 
+                        JsonSerializer.Deserialize<User>(json);
+                        break;
+                    case "packages":
+                        JsonSerializer.Deserialize<Card[]>(json);
+                        break;
+                }
+                
             }
             catch (JsonException)
             {

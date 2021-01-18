@@ -2,8 +2,8 @@
 {
     public class FireSpell : SpellCard
     {
-        public FireSpell(double damage, string cardType, ElementType elementType)
-            : base(damage, cardType, elementType, ElementType.Water)
+        public FireSpell(string uuid, double damage, string cardType)
+            : base(uuid,damage, cardType)
         {
         }
     }

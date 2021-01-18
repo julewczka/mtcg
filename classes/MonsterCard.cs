@@ -2,12 +2,10 @@
 {
     public class MonsterCard : Card
     {
-        protected ElementType Weakness { get; private set; }
 
-        public MonsterCard(double damage, string cardType, ElementType elementType, ElementType weakness = ElementType.None) 
-            : base(damage, cardType, elementType)
+        public MonsterCard(string uuid, double damage, string cardType) 
+            : base(uuid, damage, cardType)
         {
-            Weakness = weakness;
         }
     }
 }

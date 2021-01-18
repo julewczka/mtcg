@@ -8,9 +8,6 @@ namespace mtcg.controller
 {
     public static class UserController
     {
-        private static readonly Response BadRequest = new("Bad Request")
-            {StatusCode = 400, ContentType = "text/plain"};
-
         public static Response Put(string username, string payload)
         {
             var response = new Response() {ContentType = "text/plain"};
@@ -31,7 +28,7 @@ namespace mtcg.controller
                 Console.WriteLine(e.Message);
                 Console.WriteLine(e.StackTrace);
 
-                return BadRequest;
+                return ResponseTypes.BadRequest;
             }
 
             return response;
@@ -57,7 +54,7 @@ namespace mtcg.controller
                 Console.WriteLine(e.Message);
                 Console.WriteLine(e.StackTrace);
 
-                return BadRequest;
+                return ResponseTypes.BadRequest;
             }
 
             return response;
@@ -92,14 +89,14 @@ namespace mtcg.controller
                         response.SetContent(data.ToString());
                         break;
                     default:
-                        return BadRequest;
+                        return ResponseTypes.BadRequest;
                 }
             }
             catch (Exception e)
             {
                 Console.WriteLine(e.Message);
                 Console.WriteLine(e.StackTrace);
-                return BadRequest;
+                return ResponseTypes.BadRequest;
             }
 
             return response;
@@ -120,7 +117,7 @@ namespace mtcg.controller
                 Console.WriteLine(e.Message);
                 Console.WriteLine(e.StackTrace);
 
-                return BadRequest;
+                return ResponseTypes.BadRequest;
             }
 
             return response;

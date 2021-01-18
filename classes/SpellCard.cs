@@ -2,12 +2,9 @@
 {
     public class SpellCard : Card
     {
-        protected ElementType Weakness { get; private set; }
-
-        public SpellCard(double damage, string cardType, ElementType elementType, ElementType weakness) 
-            : base(damage, cardType, elementType)
+        public SpellCard(string uuid,double damage, string cardType) 
+            : base(uuid, damage, cardType)
         {
-            Weakness = weakness;
         }
 
     }

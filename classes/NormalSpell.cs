@@ -2,8 +2,8 @@
 {
     public class NormalSpell : SpellCard
     {
-        public NormalSpell(double damage, string cardType, ElementType elementType)
-            : base(damage, cardType, elementType, ElementType.Fire)
+        public NormalSpell(string uuid, double damage, string cardType)
+            : base(uuid, damage, cardType)
         {
         }
     }

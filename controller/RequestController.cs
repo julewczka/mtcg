@@ -93,6 +93,7 @@ namespace mtcg.controller
             return resource[0] switch
             {
                 "users" => UserController.Put(resource[1], payload),
+                "cards" => CardController.Put(resource[1], payload),
                 _ => ResponseTypes.NotFoundRequest
             };
         }

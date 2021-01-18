@@ -73,7 +73,6 @@ namespace mtcg.repositories
 
         public static bool InsertCard(Card card)
         {
-            var success = false;
             try
             {
                 using (var connection = new NpgsqlConnection(Credentials))
@@ -89,15 +88,39 @@ namespace mtcg.repositories
                     query.Parameters.AddWithValue("card_type", card.CardType);
                     query.Parameters.AddWithValue("element_type", card.ElementType);
                     query.Parameters.AddWithValue("damage", card.Damage);
-                    if (query.ExecuteNonQuery() > 0) success = true;
+                    return (query.ExecuteNonQuery() > 0);
                 }
             }
             catch (PostgresException)
             {
-                success = false;
+                return false;
             }
+        }
 
-            return success;
+        public static bool UpdateCard(Card card)
+        {
+            try
+            {
+                using (var connection = new NpgsqlConnection(Credentials))
+                {
+                    connection.Open();
+                    connection.TypeMapper.MapEnum<ElementType>("element_type");
+                    using var query =
+                        new NpgsqlCommand(
+                            "update card set name = @name, card_type = @card_type, element_type = @element_type, damage = @damage where uuid::text = @uuid",
+                            connection);
+                    query.Parameters.AddWithValue("uuid", card.Uuid);
+                    query.Parameters.AddWithValue("name", card.Name);
+                    query.Parameters.AddWithValue("card_type", card.CardType);
+                    query.Parameters.AddWithValue("element_type", card.ElementType);
+                    query.Parameters.AddWithValue("damage", card.Damage);
+                    return (query.ExecuteNonQuery() > 0);
+                }
+            }
+            catch (PostgresException)
+            {
+                return false;
+            }
         }
     }
 }

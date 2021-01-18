@@ -42,5 +42,26 @@ namespace mtcg.controller
 
             return response;
         }
+
+        public static Response Post(string payload)
+        {
+            var createCard = JsonSerializer.Deserialize<Card>(payload);
+            if (createCard == null) return ResponseTypes.BadRequest;
+
+            return CardRepository.InsertCard(createCard)
+                ? new Response("Created") {ContentType = "text/plain", StatusCode = 201}
+                : ResponseTypes.BadRequest;
+        }
+        
+        public static Response Put(string uuid, string payload)
+        {
+            var updateCard = JsonSerializer.Deserialize<Card>(payload);
+            if (updateCard == null) return ResponseTypes.BadRequest;
+            updateCard.Uuid = uuid;
+
+            return CardRepository.UpdateCard(updateCard)
+                ? new Response("Updated") {ContentType = "text/plain", StatusCode = 201}
+                : ResponseTypes.BadRequest;
+        }
     }
 }

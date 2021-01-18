@@ -9,6 +9,7 @@ namespace mtcg
         [PgName("water")]
         Water = 1,
         [PgName("fire")]
-        Fire = 2
+        Fire = 2,
+        None = 3
     }
 }

@@ -59,6 +59,7 @@ namespace mtcg.controller
                 "/" => response,
                 "users" => UserController.Get(resource),
                 "sessions" => ResponseTypes.MethodNotAllowed,
+                "cards" => CardController.Get(resource),
                 _ => ResponseTypes.NotFoundRequest
             };
         }

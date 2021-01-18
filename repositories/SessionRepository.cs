@@ -8,9 +8,8 @@ namespace mtcg.repositories
         private const string Credentials =
             "Server=127.0.0.1;Port=5432;Database=mtcg-db;User Id=mtcg-user;Password=mtcg-pw";
 
-        public static bool LogLogin(string username, DateTime timestamp)
+        public static void LogLogin(string username, DateTime timestamp)
         {
-            var success = false;
             try
             {
                 using (var connection = new NpgsqlConnection(Credentials))
@@ -21,16 +20,13 @@ namespace mtcg.repositories
                     query.Parameters.AddWithValue("username", username);
                     query.Parameters.AddWithValue("timestamp", timestamp);
                     connection.Open();
-                    if (query.ExecuteNonQuery() > 0) success = true;
+                    if (query.ExecuteNonQuery() > 0) Console.WriteLine("Log to Session - Nothing has changed!");
                 }
             }
             catch (PostgresException)
             {
-                Console.WriteLine("Log to Session error!");
-                success = false;
+                Console.WriteLine("Log to Session - Error!");
             }
-
-            return success;
         }
 
         public static User GetUserByName(string username)

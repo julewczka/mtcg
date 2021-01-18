@@ -43,9 +43,9 @@ namespace mtcg.controller
                 {
                     case 1:
                         fetchedUsers.AddRange(UserRepository.SelectAll());
-                        fetchedUsers.ForEach(src =>
+                        fetchedUsers.ForEach(user =>
                         {
-                            var fetchedUser = JsonSerializer.Serialize(src);
+                            var fetchedUser = JsonSerializer.Serialize(user);
                             data.Append(fetchedUser + "," + Environment.NewLine);
                         });
 

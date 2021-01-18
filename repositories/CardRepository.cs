@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Npgsql;
 
 namespace mtcg.repositories
@@ -7,7 +8,39 @@ namespace mtcg.repositories
     {
         private const string Credentials =
             "Server=127.0.0.1;Port=5432;Database=mtcg-db;User Id=mtcg-user;Password=mtcg-pw";
-        
+
+        public static List<Card> SelectAll()
+        {
+            var retrievedCards = new List<Card>();
+            try
+            {
+                using (var connection = new NpgsqlConnection(Credentials))
+                {
+                    using var query = new NpgsqlCommand("select * from card", connection);
+                    connection.Open();
+
+                    var fetch = query.ExecuteReader();
+                    while (fetch.Read())
+                    {
+                        var currentCard = new Card
+                        {
+                            Uuid = fetch["uuid"].ToString(),
+                            Name = fetch["name"].ToString(),
+                            ElementType = Card.GetElementType(fetch["element_type"].ToString()),
+                            CardType = fetch["card_type"].ToString(),
+                            Damage = (double) fetch["damage"]
+                        };
+                        retrievedCards.Add(currentCard);
+                    }
+                }
+            }
+            catch (PostgresException)
+            {
+                retrievedCards = new List<Card>();
+            }
+
+            return retrievedCards;
+        }
         public static bool InsertCard(Card card)
         {
             var success = false;

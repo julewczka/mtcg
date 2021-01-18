@@ -43,7 +43,7 @@ namespace mtcg.repositories
                     }
                 }
             }
-            catch (PostgresException pe)
+            catch (PostgresException)
             {
                 retrievedUsers = new List<User>();
             }

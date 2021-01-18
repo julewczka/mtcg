@@ -9,7 +9,7 @@ namespace mtcg.repositories
         private const string Credentials =
             "Server=127.0.0.1;Port=5432;Database=mtcg-db;User Id=mtcg-user;Password=mtcg-pw";
 
-        public static List<Card> SelectAll()
+        public static IEnumerable<Card> SelectAll()
         {
             var retrievedCards = new List<Card>();
             try
@@ -41,6 +41,36 @@ namespace mtcg.repositories
 
             return retrievedCards;
         }
+
+        public static Card SelectById(string uuid)
+        {
+            var card = new Card();
+            try
+            {
+                using (var connection = new NpgsqlConnection(Credentials))
+                {
+                    using var query = new NpgsqlCommand("select * from card where uuid::text = @uuid", connection);
+                    query.Parameters.AddWithValue("uuid", uuid);
+                    connection.Open();
+                    var fetch = query.ExecuteReader();
+                    while (fetch.Read())
+                    {
+                        card.Uuid = fetch["uuid"].ToString();
+                        card.Name = fetch["name"].ToString();
+                        card.ElementType = Card.GetElementType(fetch["element_type"].ToString());
+                        card.CardType = fetch["card_type"].ToString();
+                        card.Damage = (double) fetch["damage"];
+                    }
+                }
+            }
+            catch (PostgresException)
+            {
+                return null;
+            }
+
+            return card;
+        }
+
         public static bool InsertCard(Card card)
         {
             var success = false;

@@ -6,7 +6,7 @@ using mtcg.repositories;
 
 namespace mtcg.controller
 {
-    public class CardController
+    public static class CardController
     {
         public static Response Get(IReadOnlyList<string> resource)
         {
@@ -23,6 +23,16 @@ namespace mtcg.controller
                         var fetchedCard = JsonSerializer.Serialize(card);
                         data.Append(fetchedCard + "," + Environment.NewLine);
                     });
+                    response.StatusCode = 200;
+                    response.SetContent(data.ToString());
+                    break;
+                case 2:
+                    //resource[1] has to be the UUID of the card!
+                    var fetchedSingleCard = CardRepository.SelectById(resource[1]);
+                    if (fetchedSingleCard == null) return ResponseTypes.NotFoundRequest;
+                    
+                    data.Append(JsonSerializer.Serialize(fetchedSingleCard) + "," + Environment.NewLine);
+
                     response.StatusCode = 200;
                     response.SetContent(data.ToString());
                     break;

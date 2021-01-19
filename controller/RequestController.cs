@@ -52,6 +52,7 @@ namespace mtcg.controller
         {
             if (!IsUserAuthorized(authHeader)) return ResponseTypes.Unauthorized;
 
+            var token = authHeader.Substring(5);
             var response = new Response("<h1>Welcome to the Monster Trading Card Game!</h1>")
                 {StatusCode = 200, ContentType = "text/html"};
 
@@ -60,27 +61,39 @@ namespace mtcg.controller
                 "/" => response,
                 "users" => UserController.Get(resource),
                 "sessions" => SessionController.GetLogs(),
+                "stack" => StackController.Get(token),
+                "deck" => throw new NotImplementedException(),
+                "transaction" => throw new NotImplementedException(),
+                "stats" => throw new NotImplementedException(),
+                "score" => throw new NotImplementedException(),
+                "battles" => throw new NotImplementedException(),
+                "tradings" => throw new NotImplementedException(),
                 "cards" => ResponseTypes.MethodNotAllowed, //CardController.Get(resource),
                 _ => ResponseTypes.NotFoundRequest
             };
         }
 
-        private static Response Post(string authHeader, string resource, string payload)
+        private static Response Post(string token, string resource, string payload)
         {
             if (!IsValidJson(resource, payload)) return ResponseTypes.BadRequest;
-            //TODO: Session for Login
             return resource switch
             {
                 "users" => UserController.Post(payload),
                 "sessions" => SessionController.Login(payload),
-                "packages" => PackageController.Post(authHeader, payload),
+                "packages" => PackageController.Post(token, payload),
+                "stack" => throw new NotImplementedException(),
+                "deck" => throw new NotImplementedException(),
+                "transaction" => throw new NotImplementedException(),
+                "stats" => throw new NotImplementedException(),
+                "score" => throw new NotImplementedException(),
+                "battles" => throw new NotImplementedException(),
+                "tradings" => throw new NotImplementedException(),
                 "cards" => ResponseTypes.MethodNotAllowed, //CardController.Post(payload),
                 "/" => ResponseTypes.MethodNotAllowed,
                 _ => ResponseTypes.NotFoundRequest
             };
         }
-
-        //TODO: Login first
+        
         private static Response Put(string authHeader, IReadOnlyList<string> resource, string payload)
         {
             if (!IsUserAuthorized(authHeader)) return ResponseTypes.Unauthorized;
@@ -136,12 +149,14 @@ namespace mtcg.controller
             return true;
         }
 
+        //TODO: catch exception if basic header is not set
         private static bool IsUserAuthorized(string authHeader)
         {
             if (string.IsNullOrEmpty(authHeader)) return false;
             var token = authHeader.Substring(5);
-            var user = UserRepository.SelectUserBy(token);
-            return (user != null && SessionController.GetSessionList().ContainsKey(user.Username));
+            Console.WriteLine($"token:{token}");
+            var user = UserRepository.SelectUserByToken(token);
+            return (user != null && SessionController.CheckSessionList(user.Username));
         }
     }
 }

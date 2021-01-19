@@ -11,7 +11,7 @@ namespace mtcg.repositories
         private const string Credentials =
             "Server=127.0.0.1;Port=5432;Database=mtcg-db;User Id=mtcg-user;Password=mtcg-pw";
 
-        //TODO: Do not add second Package and Pack_Card if Card already exists!
+       
         public static bool CreatePackage(Card[] cards)
         {
             var transactionCards = cards.Select(CardRepository.InsertCard).ToList();

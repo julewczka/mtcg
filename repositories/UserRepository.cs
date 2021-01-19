@@ -89,7 +89,7 @@ namespace mtcg.repositories
             return user;
         }
 
-        public static User SelectUserBy(string token)
+        public static User SelectUserByToken(string token)
         {
             var user = new User();
             try
@@ -119,7 +119,6 @@ namespace mtcg.repositories
             {
                 return null;
             }
-
             return user;
         }
         /**

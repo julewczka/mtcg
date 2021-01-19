@@ -2,10 +2,15 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 DROP TABLE pack_cards;
 DROP TABLE deck_cards;
+DROP TABLE stack_cards;
 DROP TABLE packages;
+DROP TABLE logins;
 DROP TABLE deck;
 DROP TABLE card;
+DROP TABLE stack;
 DROP TABLE "user";
+
+
 
 CREATE TYPE element_type AS ENUM ('normal', 'water', 'fire');
 
@@ -39,6 +44,22 @@ CREATE TABLE deck (
     user_uuid UUID UNIQUE NOT NULL,
     
     FOREIGN KEY (user_uuid) REFERENCES "user"(uuid)
+);
+
+CREATE TABLE stack (
+    uuid UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_uuid UUID UNIQUE NOT NULL,
+    
+    FOREIGN KEY (user_uuid) REFERENCES "user"(uuid)
+);
+
+CREATE TABLE stack_cards(
+    stack_uuid UUID NOT NULL,
+    card_uuid UUID NOT NULL,
+    
+    PRIMARY KEY (stack_uuid, card_uuid),
+    FOREIGN KEY (stack_uuid) REFERENCES stack(uuid),
+    FOREIGN KEY (card_uuid) REFERENCES card(uuid)
 );
 
 CREATE TABLE deck_cards (

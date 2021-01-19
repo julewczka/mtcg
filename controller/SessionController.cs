@@ -70,7 +70,7 @@ namespace mtcg.controller
         /**
          * checks if user is logged in
          */
-        private static bool CheckSessionList(string username)
+        public static bool CheckSessionList(string username)
         {
             CleanSessionList();
             return SessionList.ContainsKey(username);

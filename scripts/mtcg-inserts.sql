@@ -98,3 +98,4 @@ insert into "user" (username, password) values ('lcoppens2o', 'hLWS8RcBD');
 insert into "user" (username, password) values ('avandevelde2p', 'gMpgNsEGrnr');
 insert into "user" (username, password) values ('jtredgold2q', 'nrA06T');
 insert into "user" (username, password) values ('hofficer2r', 'flcJSN2lRV');
+insert into "user" (username, password) values ('admin', 'admin');

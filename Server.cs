@@ -65,7 +65,7 @@ namespace mtcg
             var content = ReadRequestContent(sr, contentSize);
             rawRequest.Append(content);
             var request = new Request(rawRequest.ToString(), contentSize);
-            var response = RequestController.HandleRequest(request.Method, request.Url.Segments, content.ToString());
+            var response = RequestController.HandleRequest(request, content.ToString());
             response.Send(stream);
             socket.Close();
         }

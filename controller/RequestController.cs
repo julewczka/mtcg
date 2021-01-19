@@ -10,17 +10,22 @@ namespace mtcg.controller
 {
     public static class RequestController
     {
-        public static Response HandleRequest(string protocol, string[] resource, string payload)
+        public static Response HandleRequest(Request request, string payload)
         {
+            var protocol = request.Method;
+            var resource = request.Url.Segments;
+            var authHeader = "";
+            if (request.Headers.ContainsKey("authorization")) authHeader = request.Headers["authorization"];
+
             var response = new Response();
             try
             {
                 response = protocol switch
                 {
-                    "GET" => Get(resource),
-                    "POST" => Post(resource[0], payload),
-                    "PUT" => Put(resource, payload),
-                    "DELETE" => Delete(resource),
+                    "GET" => Get(authHeader, resource),
+                    "POST" => Post(authHeader, resource[0], payload),
+                    "PUT" => Put(authHeader, resource, payload),
+                    "DELETE" => Delete(authHeader, resource),
                     _ => ResponseTypes.BadRequest
                 };
             }
@@ -42,12 +47,14 @@ namespace mtcg.controller
 
             return response;
         }
-            
-        private static Response Get(IReadOnlyList<string> resource)
+
+        private static Response Get(string authHeader, IReadOnlyList<string> resource)
         {
+            if (!IsUserAuthorized(authHeader)) return ResponseTypes.Unauthorized;
+
             var response = new Response("<h1>Welcome to the Monster Trading Card Game!</h1>")
                 {StatusCode = 200, ContentType = "text/html"};
-            
+
             return resource[0] switch
             {
                 "/" => response,
@@ -57,8 +64,8 @@ namespace mtcg.controller
                 _ => ResponseTypes.NotFoundRequest
             };
         }
-        
-        private static Response Post(string resource, string payload)
+
+        private static Response Post(string authHeader, string resource, string payload)
         {
             if (!IsValidJson(resource, payload)) return ResponseTypes.BadRequest;
             //TODO: Session for Login
@@ -74,10 +81,10 @@ namespace mtcg.controller
         }
 
         //TODO: Login first
-        private static Response Put(IReadOnlyList<string> resource, string payload)
+        private static Response Put(string authHeader, IReadOnlyList<string> resource, string payload)
         {
-
-            if (resource.Count < 2 && !IsValidJson(resource[0],payload)) return ResponseTypes.BadRequest;
+            if (!IsUserAuthorized(authHeader)) return ResponseTypes.Unauthorized;
+            if (resource.Count < 2 && !IsValidJson(resource[0], payload)) return ResponseTypes.BadRequest;
 
             return resource[0] switch
             {
@@ -88,9 +95,10 @@ namespace mtcg.controller
                 _ => ResponseTypes.NotFoundRequest
             };
         }
-        
-        private static Response Delete(IReadOnlyList<string> resource)
+
+        private static Response Delete(string authHeader, IReadOnlyList<string> resource)
         {
+            if (!IsUserAuthorized(authHeader)) return ResponseTypes.Unauthorized;
             if (resource.Count < 2) return ResponseTypes.BadRequest;
             return resource[0] switch
             {
@@ -101,14 +109,14 @@ namespace mtcg.controller
                 _ => ResponseTypes.NotFoundRequest
             };
         }
-        
+
         private static bool IsValidJson(string resource, string json)
         {
             try
             {
                 switch (resource)
                 {
-                    case "users": 
+                    case "users":
                         JsonSerializer.Deserialize<User>(json);
                         break;
                     case "packages":
@@ -118,7 +126,6 @@ namespace mtcg.controller
                         JsonSerializer.Deserialize<Card>(json);
                         break;
                 }
-                
             }
             catch (JsonException)
             {
@@ -127,6 +134,14 @@ namespace mtcg.controller
             }
 
             return true;
+        }
+
+        private static bool IsUserAuthorized(string authHeader)
+        {
+            if (string.IsNullOrEmpty(authHeader)) return false;
+            var token = authHeader.Substring(5);
+            var user = UserRepository.SelectUserBy(token);
+            return (user != null && SessionController.GetSessionList().ContainsKey(user.Username));
         }
     }
 }

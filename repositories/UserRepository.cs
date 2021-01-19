@@ -88,7 +88,40 @@ namespace mtcg.repositories
 
             return user;
         }
-        
+
+        public static User SelectUserBy(string token)
+        {
+            var user = new User();
+            try
+            {
+                using (var connection = new NpgsqlConnection(Credentials))
+                {
+                    using var query = new NpgsqlCommand("select * from \"user\" where token = @token", connection);
+                    query.Parameters.AddWithValue("token", token);
+                    connection.Open();
+                    var fetch = query.ExecuteReader();
+                    while (fetch.Read())
+                    {
+                        user.Id = fetch["uuid"].ToString();
+                        user.Username = fetch["username"].ToString();
+                        user.Name = fetch["name"].ToString();
+                        user.Token = fetch["token"].ToString();
+                        user.Bio = fetch["bio"].ToString();
+                        user.Image = fetch["image"].ToString();
+                        user.Coins = string.IsNullOrEmpty(fetch["coins"].ToString())
+                            ? 20
+                            : int.Parse(fetch["coins"].ToString());
+                    }
+                }
+            }
+
+            catch (PostgresException)
+            {
+                return null;
+            }
+
+            return user;
+        }
         /**
          * insert a user into database table "user"
          */

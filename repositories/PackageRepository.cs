@@ -11,10 +11,15 @@ namespace mtcg.repositories
         private const string Credentials =
             "Server=127.0.0.1;Port=5432;Database=mtcg-db;User Id=mtcg-user;Password=mtcg-pw";
 
+        //TODO: Do not add second Package and Pack_Card if Card already exists!
         public static bool CreatePackage(Card[] cards)
         {
             var transactionCards = cards.Select(CardRepository.InsertCard).ToList();
+            if (transactionCards.Contains(false)) return false;
+            
             var packUuid = AddPackage();
+            if (string.IsNullOrEmpty(packUuid)) return false;
+
             var transactionPackCards = cards.Select(card => AddRelationship(packUuid, card.Uuid)).ToList();
             
             return (!transactionCards.Contains(false) && !(transactionPackCards.Contains(false)));
@@ -44,7 +49,7 @@ namespace mtcg.repositories
         
         private static bool AddRelationship(string packUuid, string cardUuid)
         {
-            if (string.IsNullOrEmpty(packUuid) || string.IsNullOrEmpty(cardUuid)) return false;
+            if (string.IsNullOrEmpty(cardUuid)) return false;
 
             using var connection = new NpgsqlConnection(Credentials);
             using var query = new NpgsqlCommand("insert into pack_cards(pack_uuid, card_uuid) values (@pack_uuid, @card_uuid)", connection);

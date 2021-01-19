@@ -73,7 +73,7 @@ namespace mtcg.controller
             {
                 "users" => UserController.Post(payload),
                 "sessions" => SessionController.Login(payload),
-                "packages" => PackageController.Post(payload),
+                "packages" => PackageController.Post(authHeader, payload),
                 "cards" => ResponseTypes.MethodNotAllowed, //CardController.Post(payload),
                 "/" => ResponseTypes.MethodNotAllowed,
                 _ => ResponseTypes.NotFoundRequest

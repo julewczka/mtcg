@@ -63,5 +63,12 @@ namespace mtcg.controller
                 ? new Response("Updated") {ContentType = "text/plain", StatusCode = 201}
                 : ResponseTypes.BadRequest;
         }
+
+        public static Response Delete(string uuid)
+        {
+            return CardRepository.DeleteCard(uuid)
+                ? new Response("OK") {ContentType = "text/plain", StatusCode = 200}
+                : ResponseTypes.BadRequest;
+        }
     }
 }

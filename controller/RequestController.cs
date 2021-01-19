@@ -79,6 +79,7 @@ namespace mtcg.controller
                 "users" => UserController.Post(payload),
                 "sessions" => SessionController.Login(payload),
                 "packages" => PackageController.Post(payload),
+                "cards" => ResponseTypes.MethodNotAllowed,//CardController.Post(payload),
                 "/" => ResponseTypes.MethodNotAllowed,
                 _ => ResponseTypes.NotFoundRequest
             };
@@ -104,6 +105,7 @@ namespace mtcg.controller
             return resource[0] switch
             {
                 "users" => UserController.Delete(resource[1]),
+                "cards" => CardController.Delete(resource[1]),
                 "/" => ResponseTypes.MethodNotAllowed,
                 _ => ResponseTypes.NotFoundRequest
             };

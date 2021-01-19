@@ -148,23 +148,18 @@ namespace mtcg.repositories
         
         public static bool DeleteUser(string uuid)
         {
-            var success = false;
             using var connection = new NpgsqlConnection(Credentials);
             try
             {
-                var deleteCount = 0;
                 using var query = new NpgsqlCommand("delete from \"user\" where uuid::text = @uuid", connection);
                 query.Parameters.AddWithValue("uuid", uuid);
                 connection.Open();
-                deleteCount = query.ExecuteNonQuery();
-                if (deleteCount > 0) success = true;
+                return query.ExecuteNonQuery() > 0;
             }
             catch (PostgresException)
             {
-                success = false;
+                return false;
             }
-
-            return success;
         }
     }
 }

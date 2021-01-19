@@ -122,5 +122,21 @@ namespace mtcg.repositories
                 return false;
             }
         }
+        
+        public static bool DeleteCard(string uuid)
+        {
+            using var connection = new NpgsqlConnection(Credentials);
+            try
+            {
+                using var query = new NpgsqlCommand("delete from card where uuid::text = @uuid", connection);
+                query.Parameters.AddWithValue("uuid", uuid);
+                connection.Open();
+                return query.ExecuteNonQuery() > 0;
+            }
+            catch (PostgresException)
+            {
+                return false;
+            }
+        }
     }
 }

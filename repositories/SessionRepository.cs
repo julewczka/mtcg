@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Npgsql;
 
 namespace mtcg.repositories
@@ -8,6 +9,43 @@ namespace mtcg.repositories
         private const string Credentials =
             "Server=127.0.0.1;Port=5432;Database=mtcg-db;User Id=mtcg-user;Password=mtcg-pw";
 
+        /**
+         * Get all records of the db-table "logins"
+         * returns a list of Sessions (username + timestamp)
+         */
+        public static List<Session> GetLogs()
+        {
+            var retrievedLogs = new List<Session>();
+            try
+            {
+                using (var connection = new NpgsqlConnection(Credentials))
+                {
+                    connection.Open();
+                    using var query = new NpgsqlCommand("select * from logins", connection);
+                    var fetch = query.ExecuteReader();
+                    while (fetch.Read())
+                    {
+                        var session = new Session()
+                        {
+                            Uuid = fetch["uuid"].ToString(),
+                            Username = fetch["username"].ToString(),
+                            Timestamp = DateTime.Parse(fetch["timestamp"].ToString())
+                        };
+                        retrievedLogs.Add(session);
+                    }
+                }
+            }
+            catch (PostgresException)
+            {
+                return null;
+            }
+
+            return retrievedLogs;
+        }
+        
+        /**
+         * Insert a session (username + timestamp) after each login
+         */
         public static void LogLogin(string username, DateTime timestamp)
         {
             try
@@ -29,6 +67,9 @@ namespace mtcg.repositories
             }
         }
 
+        /**
+         * Get user by username
+         */
         public static User GetUserByName(string username)
         {
             var user = new User();

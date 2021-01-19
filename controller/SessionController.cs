@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Text.Json;
 using mtcg.repositories;
 
@@ -12,8 +13,11 @@ namespace mtcg.controller
          * List for every logged-in user
          */
         private static readonly SortedDictionary<string, DateTime> SessionList = new();
-
-        //TODO: implement GET-Method
+        
+        /**
+         * compare received user credentials with database records
+         * add to SessionList after successful comparison
+         */
         public static Response Login(string payload)
         {
             var loginUser = JsonSerializer.Deserialize<User>(payload);
@@ -26,18 +30,30 @@ namespace mtcg.controller
             var retrievedUser = SessionRepository.GetUserByName(loginUser.Username);
             if (retrievedUser == null || loginUser.Password != retrievedUser.Password)
                 return ResponseTypes.Unauthorized;
-            
+
             loginUser.Password = string.Empty;
             retrievedUser.Password = string.Empty;
-            
+
             SessionList.Add(loginUser.Username, timestamp);
             SessionRepository.LogLogin(loginUser.Username, timestamp);
 
             return new Response("Authenticated") {ContentType = "text/plain", StatusCode = 200};
         }
+        
+        public static Response GetLogs()
+        {
+            var logs = SessionRepository.GetLogs();
+            var data = new StringBuilder();
+            if (logs == null) return ResponseTypes.BadRequest;
+
+            logs.ForEach(log => { data.Append(JsonSerializer.Serialize(log) + "," + Environment.NewLine); }
+            );
+
+            return new Response(data.ToString()) {ContentType = "application/json", StatusCode = 200};
+        }
 
         /**
-         * remove User 2 hours after login
+         * logout User 2 hours after login
          */
         private static void CleanSessionList()
         {
@@ -51,12 +67,15 @@ namespace mtcg.controller
             }
         }
 
+        /**
+         * checks if user is logged in
+         */
         private static bool CheckSessionList(string username)
         {
             CleanSessionList();
             return SessionList.ContainsKey(username);
         }
-
+        
         public static SortedDictionary<string, DateTime> GetSessionList()
         {
             return SessionList;

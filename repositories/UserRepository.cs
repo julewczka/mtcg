@@ -89,6 +89,9 @@ namespace mtcg.repositories
             return user;
         }
         
+        /**
+         * insert a user into database table "user"
+         */
         public static bool InsertUser(User user)
         {
             var success = false;
@@ -104,7 +107,7 @@ namespace mtcg.repositories
 
                     query.Parameters.AddWithValue("username", user.Username);
                     query.Parameters.AddWithValue("password", user.Password);
-                    query.Parameters.AddWithValue("name", user.Username);
+                    query.Parameters.AddWithValue("name", user.Name);
                     query.Parameters.AddWithValue("token", user.Token);
                     connection.Open();
                     insertCount = query.ExecuteNonQuery();
@@ -119,6 +122,9 @@ namespace mtcg.repositories
             return success;
         }
         
+        /**
+         * edit user properties
+         */
         public static bool UpdateUser(User user)
         {
             var success = false;
@@ -146,6 +152,9 @@ namespace mtcg.repositories
             return success;
         }
         
+        /**
+         * delete user from database if required
+         */
         public static bool DeleteUser(string uuid)
         {
             using var connection = new NpgsqlConnection(Credentials);

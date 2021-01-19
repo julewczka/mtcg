@@ -10,7 +10,6 @@ namespace mtcg.controller
 {
     public static class RequestController
     {
-        //TODO: Catch all exceptions
         public static Response HandleRequest(string protocol, string[] resource, string payload)
         {
             var response = new Response();
@@ -43,12 +42,7 @@ namespace mtcg.controller
 
             return response;
         }
-
-        /**
-         * forms & returns a response
-         * request data from resources (e.g. /users)
-         * param -> needs a string array of segments
-         */
+            
         private static Response Get(IReadOnlyList<string> resource)
         {
             var response = new Response("<h1>Welcome to the Monster Trading Card Game!</h1>")
@@ -58,18 +52,12 @@ namespace mtcg.controller
             {
                 "/" => response,
                 "users" => UserController.Get(resource),
-                "sessions" => ResponseTypes.MethodNotAllowed,
-                "cards" => CardController.Get(resource),
+                "sessions" => SessionController.GetLogs(),
+                "cards" => ResponseTypes.MethodNotAllowed, //CardController.Get(resource),
                 _ => ResponseTypes.NotFoundRequest
             };
         }
-
-        /**
-         * forms & returns a response
-         * insert data to resources (e.g. /users)
-         * param resource: resource (e.g. /users)
-         * param payload: body in JSON-format (e.g. username, token)
-         */
+        
         private static Response Post(string resource, string payload)
         {
             if (!IsValidJson(resource, payload)) return ResponseTypes.BadRequest;
@@ -79,7 +67,7 @@ namespace mtcg.controller
                 "users" => UserController.Post(payload),
                 "sessions" => SessionController.Login(payload),
                 "packages" => PackageController.Post(payload),
-                "cards" => ResponseTypes.MethodNotAllowed,//CardController.Post(payload),
+                "cards" => ResponseTypes.MethodNotAllowed, //CardController.Post(payload),
                 "/" => ResponseTypes.MethodNotAllowed,
                 _ => ResponseTypes.NotFoundRequest
             };
@@ -94,7 +82,9 @@ namespace mtcg.controller
             return resource[0] switch
             {
                 "users" => UserController.Put(resource[1], payload),
-                "cards" => CardController.Put(resource[1], payload),
+                "cards" => ResponseTypes.MethodNotAllowed, //CardController.Put(resource[1], payload),
+                "sessions" => ResponseTypes.MethodNotAllowed,
+                "/" => ResponseTypes.MethodNotAllowed,
                 _ => ResponseTypes.NotFoundRequest
             };
         }
@@ -105,15 +95,13 @@ namespace mtcg.controller
             return resource[0] switch
             {
                 "users" => UserController.Delete(resource[1]),
-                "cards" => CardController.Delete(resource[1]),
+                "cards" => ResponseTypes.MethodNotAllowed, //CardController.Delete(resource[1]),
+                "sessions" => ResponseTypes.MethodNotAllowed,
                 "/" => ResponseTypes.MethodNotAllowed,
                 _ => ResponseTypes.NotFoundRequest
             };
         }
-
-        /**
-         * check if string is valid JSON
-         */
+        
         private static bool IsValidJson(string resource, string json)
         {
             try
@@ -125,6 +113,9 @@ namespace mtcg.controller
                         break;
                     case "packages":
                         JsonSerializer.Deserialize<Card[]>(json);
+                        break;
+                    case "cards":
+                        JsonSerializer.Deserialize<Card>(json);
                         break;
                 }
                 

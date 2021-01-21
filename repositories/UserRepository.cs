@@ -19,28 +19,24 @@ namespace mtcg.repositories
 
             try
             {
-                using (var connection = new NpgsqlConnection(Credentials))
-                {
-                    using var query = new NpgsqlCommand("select * from \"user\"", connection);
-                    connection.Open();
+                using var connection = new NpgsqlConnection(Credentials);
+                using var query = new NpgsqlCommand("select * from \"user\"", connection);
+                connection.Open();
 
-                    var fetch = query.ExecuteReader();
-                    while (fetch.Read())
+                var fetch = query.ExecuteReader();
+                while (fetch.Read())
+                {
+                    var currentUser = new User
                     {
-                        var currentUser = new User
-                        {
-                            Id = fetch["uuid"].ToString(),
-                            Username = fetch["username"].ToString(),
-                            Name = fetch["name"].ToString(),
-                            Token = fetch["token"].ToString(),
-                            Bio = fetch["bio"].ToString(),
-                            Image = fetch["image"].ToString(),
-                            Coins = string.IsNullOrEmpty(fetch["coins"].ToString())
-                                ? 20
-                                : int.Parse(fetch["coins"].ToString())
-                        };
-                        retrievedUsers.Add(currentUser);
-                    }
+                        Id = fetch["uuid"].ToString(),
+                        Username = fetch["username"].ToString(),
+                        Name = fetch["name"].ToString(),
+                        Token = fetch["token"].ToString(),
+                        Bio = fetch["bio"].ToString(),
+                        Image = fetch["image"].ToString(),
+                        Coins = double.Parse(fetch["coins"].ToString())
+                    };
+                    retrievedUsers.Add(currentUser);
                 }
             }
             catch (PostgresException)
@@ -60,24 +56,22 @@ namespace mtcg.repositories
             var user = new User();
             try
             {
-                using (var connection = new NpgsqlConnection(Credentials))
+                using var connection = new NpgsqlConnection(Credentials);
+                using var query = new NpgsqlCommand("select * from \"user\" where username = @p", connection);
+                query.Parameters.AddWithValue("p", username);
+                connection.Open();
+                var fetch = query.ExecuteReader();
+                while (fetch.Read())
                 {
-                    using var query = new NpgsqlCommand("select * from \"user\" where username = @p", connection);
-                    query.Parameters.AddWithValue("p", username);
-                    connection.Open();
-                    var fetch = query.ExecuteReader();
-                    while (fetch.Read())
-                    {
-                        user.Id = fetch["uuid"].ToString();
-                        user.Username = fetch["username"].ToString();
-                        user.Name = fetch["name"].ToString();
-                        user.Token = fetch["token"].ToString();
-                        user.Bio = fetch["bio"].ToString();
-                        user.Image = fetch["image"].ToString();
-                        user.Coins = string.IsNullOrEmpty(fetch["coins"].ToString())
-                            ? 20
-                            : int.Parse(fetch["coins"].ToString());
-                    }
+                    user.Id = fetch["uuid"].ToString();
+                    user.Username = fetch["username"].ToString();
+                    user.Name = fetch["name"].ToString();
+                    user.Token = fetch["token"].ToString();
+                    user.Bio = fetch["bio"].ToString();
+                    user.Image = fetch["image"].ToString();
+                    user.Coins = string.IsNullOrEmpty(fetch["coins"].ToString())
+                        ? 20
+                        : double.Parse(fetch["coins"].ToString());
                 }
             }
 
@@ -207,7 +201,7 @@ namespace mtcg.repositories
                 query.Parameters.AddWithValue("bio", user.Bio);
                 query.Parameters.AddWithValue("image", user.Image);
                 //TODO: Convert data-table from int to double
-                query.Parameters.AddWithValue("coins", (int)user.Coins);
+                query.Parameters.AddWithValue("coins", user.Coins);
                 connection.Open();
                 updateCount = query.ExecuteNonQuery();
                 if (updateCount > 0) success = true;

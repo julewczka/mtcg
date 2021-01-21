@@ -58,13 +58,11 @@ namespace mtcg.controller
         private static Response Get(string token, IReadOnlyList<string> resource)
         {
             if (!IsUserAuthorized(token)) return ResponseTypes.Unauthorized;
-            
-            var response = new Response("<h1>Welcome to the Monster Trading Card Game!</h1>")
-                {StatusCode = 200, ContentType = "text/html"};
 
             return resource[0] switch
             {
-                "/" => response,
+                "/" => ResponseTypes.CustomResponse("<h1>Welcome to the Monster Trading Card Game!</h1>", 200,
+                    "text/html"),
                 "users" => UserController.Get(token, resource),
                 "sessions" => SessionController.GetLogs(),
                 "packages" => PackageController.Get(resource),
@@ -86,7 +84,7 @@ namespace mtcg.controller
             {
                 if (!IsUserAuthorized(token)) return ResponseTypes.Unauthorized;
             }
-            
+
             if (!IsValidJson(resource[0], payload)) return ResponseTypes.BadRequest;
             return resource[0] switch
             {
@@ -105,7 +103,7 @@ namespace mtcg.controller
                 _ => ResponseTypes.NotFoundRequest
             };
         }
-        
+
         private static Response Put(string token, IReadOnlyList<string> resource, string payload)
         {
             if (!IsUserAuthorized(token)) return ResponseTypes.Unauthorized;
@@ -113,7 +111,7 @@ namespace mtcg.controller
 
             return resource[0] switch
             {
-                "users" => UserController.Put(token,resource[1], payload),
+                "users" => UserController.Put(token, resource[1], payload),
                 "deck" => DeckController.ConfigureDeck(token, payload),
                 "cards" => ResponseTypes.MethodNotAllowed, //CardController.Put(resource[1], payload),
                 "sessions" => ResponseTypes.MethodNotAllowed,
@@ -128,7 +126,7 @@ namespace mtcg.controller
             if (resource.Count < 2) return ResponseTypes.BadRequest;
             return resource[0] switch
             {
-                "users" => UserController.Delete(token,resource[1]),
+                "users" => UserController.Delete(token, resource[1]),
                 "cards" => ResponseTypes.MethodNotAllowed, //CardController.Delete(resource[1]),
                 "sessions" => ResponseTypes.MethodNotAllowed,
                 "/" => ResponseTypes.MethodNotAllowed,
@@ -164,7 +162,6 @@ namespace mtcg.controller
             return true;
         }
 
-        //TODO: catch exception if basic header is not set
         private static bool IsUserAuthorized(string token)
         {
             if (string.IsNullOrEmpty(token)) return false;

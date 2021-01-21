@@ -27,7 +27,7 @@ CREATE TABLE "user" (
     name TEXT,
     bio TEXT, 
     image TEXT, 
-    coins INT DEFAULT 20,
+    coins FLOAT DEFAULT 20.0,
     token TEXT UNIQUE
 );
 

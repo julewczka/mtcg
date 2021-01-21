@@ -55,7 +55,7 @@ namespace mtcg.repositories
          * Get a single user
          * returns an user object
          */
-        public static User SelectUser(string username)
+        public static User SelectUserByUsername(string username)
         {
             var user = new User();
             try
@@ -64,6 +64,40 @@ namespace mtcg.repositories
                 {
                     using var query = new NpgsqlCommand("select * from \"user\" where username = @p", connection);
                     query.Parameters.AddWithValue("p", username);
+                    connection.Open();
+                    var fetch = query.ExecuteReader();
+                    while (fetch.Read())
+                    {
+                        user.Id = fetch["uuid"].ToString();
+                        user.Username = fetch["username"].ToString();
+                        user.Name = fetch["name"].ToString();
+                        user.Token = fetch["token"].ToString();
+                        user.Bio = fetch["bio"].ToString();
+                        user.Image = fetch["image"].ToString();
+                        user.Coins = string.IsNullOrEmpty(fetch["coins"].ToString())
+                            ? 20
+                            : int.Parse(fetch["coins"].ToString());
+                    }
+                }
+            }
+
+            catch (PostgresException)
+            {
+                return null;
+            }
+
+            return user;
+        }
+        
+        public static User SelectUserByUuid(string uuid)
+        {
+            var user = new User();
+            try
+            {
+                using (var connection = new NpgsqlConnection(Credentials))
+                {
+                    using var query = new NpgsqlCommand("select * from \"user\" where uuid::text = @uuid", connection);
+                    query.Parameters.AddWithValue("uuid", uuid);
                     connection.Open();
                     var fetch = query.ExecuteReader();
                     while (fetch.Read())
@@ -166,12 +200,14 @@ namespace mtcg.repositories
                 var updateCount = 0;
                 using var query =
                     new NpgsqlCommand(
-                        "update \"user\" set name = @name, bio = @bio, image = @image where username = @username",
+                        "update \"user\" set name = @name, bio = @bio, image = @image, coins = @coins where username = @username",
                         connection);
                 query.Parameters.AddWithValue("username", user.Username);
                 query.Parameters.AddWithValue("name", user.Name);
                 query.Parameters.AddWithValue("bio", user.Bio);
                 query.Parameters.AddWithValue("image", user.Image);
+                //TODO: Convert data-table from int to double
+                query.Parameters.AddWithValue("coins", (int)user.Coins);
                 connection.Open();
                 updateCount = query.ExecuteNonQuery();
                 if (updateCount > 0) success = true;

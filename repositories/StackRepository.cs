@@ -10,6 +10,11 @@ namespace mtcg.repositories
         private const string Credentials =
             "Server=127.0.0.1;Port=5432;Database=mtcg-db;User Id=mtcg-user;Password=mtcg-pw";
         
+        /// <summary>
+        /// Show all acquired cards
+        /// </summary>
+        /// <param name="uuid"> uuid of the user</param>
+        /// <returns>returns a list of cards</returns>
         public static List<Card> GetStack(string uuid)
         {
             var cards = new List<Card>();
@@ -38,6 +43,12 @@ namespace mtcg.repositories
             var buyPack = PackageRepository.SellPackage();
             if (buyPack == null) return false;
 
+            var user = UserRepository.SelectUserByUuid(userUuid);
+            if (user == null) return false;
+
+            if (user.Coins < buyPack.Price) return false;
+            user.Coins -= buyPack.Price;
+            
             var stack = GetStackByUserId(userUuid);
 
             var stackUuid = stack.Id ?? CreateStack(userUuid);
@@ -46,6 +57,9 @@ namespace mtcg.repositories
             
             var stackCards = buyPack.Cards.Select(card => AddRelationship(card.Uuid, stackUuid)).ToList();
             if (!PackageRepository.DeletePackage(buyPack.Uuid)) return false;
+            
+            if (!UserRepository.UpdateUser(user)) return false;
+            
             return !stackCards.Contains(false);
         }
 

@@ -22,5 +22,16 @@ namespace mtcg.controller
         
         public static readonly Response MethodNotAllowed = new("Method not Allowed")
             {StatusCode = 405, ContentType = "text/plain"};
+
+        public static Response CustomError(string content, int code)
+        {
+            return new(content) {StatusCode = code, ContentType = "text/plain"};
+        }
+
+        public static Response CustomResponse(string content, int code, string contentType)
+        {
+            return new(content) {StatusCode = code, ContentType = contentType};
+
+        }
     }
 }

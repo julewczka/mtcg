@@ -68,7 +68,7 @@ CREATE TABLE deck_cards (
     
     PRIMARY KEY (deck_uuid, card_uuid),
     FOREIGN KEY (deck_uuid) REFERENCES deck(uuid),
-    FOREIGN KEY (card_uuid) REFERENCES card(uuid)
+    FOREIGN KEY (card_uuid) REFERENCES card(uuid) ON UPDATE CASCADE
 );
 
 CREATE TABLE packages (

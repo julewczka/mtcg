@@ -51,7 +51,7 @@ namespace mtcg.controller
                     response.SetContent(data.ToString());
                     break;
                 case 2:
-                    var fetchedSingleUser = UserRepository.SelectUser(resource[1]);
+                    var fetchedSingleUser = UserRepository.SelectUserByUsername(resource[1]);
                     if (fetchedSingleUser== null) return ResponseTypes.NotFoundRequest;
                     data.Append(JsonSerializer.Serialize(fetchedSingleUser) + "," + Environment.NewLine);
 

@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Xml;
 using Npgsql;
 
 namespace mtcg.repositories
@@ -13,11 +12,8 @@ namespace mtcg.repositories
 
         public static Package SellPackage()
         {
-            //TODO: What if theres no package?
             var packages = GetAllPackages();
-            //if(packages.Count == 0){}
-            
-            return packages[(new Random()).Next(0, packages.Count)];
+            return packages.Count == 0 ? null : packages[(new Random()).Next(0, packages.Count)];
         }
         public static List<Package> GetAllPackages()
         {

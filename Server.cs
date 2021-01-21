@@ -70,8 +70,9 @@ namespace mtcg
             socket.Close();
         }
 
-        private static StringBuilder ReadRequestContent(StreamReader stream, int contentSize)
+        private static StringBuilder ReadRequestContent(TextReader stream, int contentSize)
         {
+            if (contentSize == 0) return new StringBuilder();
             var content = new StringBuilder();
             var lines = new char[contentSize];
             stream.Read(lines, 0, contentSize);

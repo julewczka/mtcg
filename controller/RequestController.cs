@@ -70,7 +70,7 @@ namespace mtcg.controller
                 "sessions" => SessionController.GetLogs(),
                 "packages" => PackageController.Get(resource),
                 "stack" => StackController.Get(token),
-                "deck" => throw new NotImplementedException(),
+                "deck" => DeckController.GetDeckByToken(token),
                 "transaction" => throw new NotImplementedException(),
                 "stats" => throw new NotImplementedException(),
                 "score" => throw new NotImplementedException(),
@@ -95,7 +95,7 @@ namespace mtcg.controller
                 "sessions" => SessionController.Login(payload),
                 "packages" => PackageController.Post(token, payload),
                 "stack" => ResponseTypes.MethodNotAllowed,
-                "deck" => throw new NotImplementedException(),
+                "deck" => DeckController.CreateDeck(token, payload),
                 "transactions" => TransactionController.StartTransaction(resource[1], token),
                 "stats" => throw new NotImplementedException(),
                 "score" => throw new NotImplementedException(),
@@ -115,6 +115,7 @@ namespace mtcg.controller
             return resource[0] switch
             {
                 "users" => UserController.Put(resource[1], payload),
+                "deck" => DeckController.ConfigureDeck(token, payload),
                 "cards" => ResponseTypes.MethodNotAllowed, //CardController.Put(resource[1], payload),
                 "sessions" => ResponseTypes.MethodNotAllowed,
                 "/" => ResponseTypes.MethodNotAllowed,
@@ -167,7 +168,6 @@ namespace mtcg.controller
         //TODO: catch exception if basic header is not set
         private static bool IsUserAuthorized(string token)
         {
-            Console.WriteLine($"Token:{token}");
             if (string.IsNullOrEmpty(token)) return false;
             var user = UserRepository.SelectUserByToken(token);
             return (user != null && SessionController.CheckSessionList(user.Username));

@@ -1,9 +1,10 @@
-﻿
+﻿using System.Collections.Generic;
+
 namespace mtcg
 {
     public class Deck
     {
-        private int id { get; set; }
-        private Card[] _cards = new Card[4];
+        public string Uuid { get; set; }
+        public List<Card> Cards { get; set; }
     }
 }

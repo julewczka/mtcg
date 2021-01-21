@@ -19,9 +19,9 @@ namespace mtcg
 
         public string Image { get; set; } = string.Empty;
 
-        public int Coins { get; set; } = 20;
+        public double Coins { get; set; } = 20;
 
-        private Deck Deck { get; set; }
+        public Deck Deck { get; set; }
 
         private Stack Stack { get; set; }
     }

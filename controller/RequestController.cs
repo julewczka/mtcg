@@ -15,16 +15,24 @@ namespace mtcg.controller
             var protocol = request.Method;
             var resource = request.Url.Segments;
             var authHeader = "";
-            if (request.Headers.ContainsKey("authorization")) authHeader = request.Headers["authorization"];
+            var token = "";
+            if (request.Headers.ContainsKey("authorization"))
+            {
+                authHeader = request.Headers["authorization"];
+                if (authHeader.Length > 5)
+                {
+                    token = authHeader.Substring(5);
+                }
+            }
 
             var response = new Response();
             try
             {
                 response = protocol switch
                 {
-                    "GET" => Get(authHeader, resource),
-                    "POST" => Post(authHeader, resource[0], payload),
-                    "PUT" => Put(authHeader, resource, payload),
+                    "GET" => Get(token, resource),
+                    "POST" => Post(token, resource, payload),
+                    "PUT" => Put(token, resource, payload),
                     "DELETE" => Delete(authHeader, resource),
                     _ => ResponseTypes.BadRequest
                 };
@@ -48,11 +56,10 @@ namespace mtcg.controller
             return response;
         }
 
-        private static Response Get(string authHeader, IReadOnlyList<string> resource)
+        private static Response Get(string token, IReadOnlyList<string> resource)
         {
-            if (!IsUserAuthorized(authHeader)) return ResponseTypes.Unauthorized;
-
-            var token = authHeader.Substring(5);
+            if (!IsUserAuthorized(token)) return ResponseTypes.Unauthorized;
+            
             var response = new Response("<h1>Welcome to the Monster Trading Card Game!</h1>")
                 {StatusCode = 200, ContentType = "text/html"};
 
@@ -61,6 +68,7 @@ namespace mtcg.controller
                 "/" => response,
                 "users" => UserController.Get(resource),
                 "sessions" => SessionController.GetLogs(),
+                "packages" => PackageController.Get(resource),
                 "stack" => StackController.Get(token),
                 "deck" => throw new NotImplementedException(),
                 "transaction" => throw new NotImplementedException(),
@@ -73,17 +81,22 @@ namespace mtcg.controller
             };
         }
 
-        private static Response Post(string token, string resource, string payload)
+        private static Response Post(string token, IReadOnlyList<string> resource, string payload)
         {
-            if (!IsValidJson(resource, payload)) return ResponseTypes.BadRequest;
-            return resource switch
+            if (resource[0] != "sessions")
+            {
+                if (!IsUserAuthorized(token)) return ResponseTypes.Unauthorized;
+            }
+            
+            if (!IsValidJson(resource[0], payload)) return ResponseTypes.BadRequest;
+            return resource[0] switch
             {
                 "users" => UserController.Post(payload),
                 "sessions" => SessionController.Login(payload),
                 "packages" => PackageController.Post(token, payload),
-                "stack" => throw new NotImplementedException(),
+                "stack" => ResponseTypes.MethodNotAllowed,
                 "deck" => throw new NotImplementedException(),
-                "transaction" => throw new NotImplementedException(),
+                "transactions" => TransactionController.StartTransaction(resource[1], token),
                 "stats" => throw new NotImplementedException(),
                 "score" => throw new NotImplementedException(),
                 "battles" => throw new NotImplementedException(),
@@ -94,9 +107,9 @@ namespace mtcg.controller
             };
         }
         
-        private static Response Put(string authHeader, IReadOnlyList<string> resource, string payload)
+        private static Response Put(string token, IReadOnlyList<string> resource, string payload)
         {
-            if (!IsUserAuthorized(authHeader)) return ResponseTypes.Unauthorized;
+            if (!IsUserAuthorized(token)) return ResponseTypes.Unauthorized;
             if (resource.Count < 2 && !IsValidJson(resource[0], payload)) return ResponseTypes.BadRequest;
 
             return resource[0] switch
@@ -138,6 +151,8 @@ namespace mtcg.controller
                     case "cards":
                         JsonSerializer.Deserialize<Card>(json);
                         break;
+                    case "transactions":
+                        return true;
                 }
             }
             catch (JsonException)
@@ -150,11 +165,10 @@ namespace mtcg.controller
         }
 
         //TODO: catch exception if basic header is not set
-        private static bool IsUserAuthorized(string authHeader)
+        private static bool IsUserAuthorized(string token)
         {
-            if (string.IsNullOrEmpty(authHeader)) return false;
-            var token = authHeader.Substring(5);
-            Console.WriteLine($"token:{token}");
+            Console.WriteLine($"Token:{token}");
+            if (string.IsNullOrEmpty(token)) return false;
             var user = UserRepository.SelectUserByToken(token);
             return (user != null && SessionController.CheckSessionList(user.Username));
         }

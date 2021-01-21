@@ -11,14 +11,14 @@ namespace mtcg.controller
         public static Response Get(string token)
         {
             var response = new Response() {ContentType = "application/json"};
-            var listStack = new List<Card>();
             var data = new StringBuilder();
 
             var user = UserRepository.SelectUserByToken(token);
-
             if (user == null) return ResponseTypes.NotFoundRequest;
            
-            listStack = StackRepository.GetStack(user.Id);
+            var listStack = StackRepository.GetStack(user.Id);
+            if (listStack == null) return ResponseTypes.NotFoundRequest;
+            
             listStack.ForEach(card => { data.Append(JsonSerializer.Serialize(card)); });
 
             response.StatusCode = 200;
@@ -26,5 +26,6 @@ namespace mtcg.controller
 
             return response;
         }
+        
     }
 }

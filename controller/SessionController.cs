@@ -13,7 +13,7 @@ namespace mtcg.controller
          * List for every logged-in user
          */
         private static readonly SortedDictionary<string, DateTime> SessionList = new();
-        
+
         /**
          * compare received user credentials with database records
          * add to SessionList after successful comparison
@@ -39,7 +39,7 @@ namespace mtcg.controller
 
             return new Response("Authenticated") {ContentType = "text/plain", StatusCode = 200};
         }
-        
+
         public static Response GetLogs()
         {
             var logs = SessionRepository.GetLogs();
@@ -72,10 +72,14 @@ namespace mtcg.controller
          */
         public static bool CheckSessionList(string username)
         {
+            var name = string.IsNullOrEmpty(username)
+                ? "empty"
+                : username;
+
             CleanSessionList();
-            return SessionList.ContainsKey(username);
+            return SessionList.ContainsKey(name);
         }
-        
+
         public static SortedDictionary<string, DateTime> GetSessionList()
         {
             return SessionList;

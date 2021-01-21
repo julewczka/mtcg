@@ -2,6 +2,12 @@ namespace mtcg.controller
 {
     public static class ResponseTypes
     {
+        public static readonly Response HttpOk = new("OK")
+            {StatusCode = 200, ContentType = "text/plain"};
+
+        public static readonly Response Created = new("Created")
+            {StatusCode = 201, ContentType = "text/plain"};
+        
         public static readonly Response BadRequest = new("Bad Request")
             {StatusCode = 400, ContentType = "text/plain"};
 

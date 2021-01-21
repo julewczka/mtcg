@@ -36,40 +36,32 @@ namespace mtcg.controller
             var response = new Response() {ContentType = "application/json"};
             var fetchedUsers = new List<User>();
             var data = new StringBuilder();
-
-            try
+            
+            switch (resource.Count)
             {
-                switch (resource.Count)
-                {
-                    case 1:
-                        fetchedUsers.AddRange(UserRepository.SelectAll());
-                        fetchedUsers.ForEach(user =>
-                        {
-                            var fetchedUser = JsonSerializer.Serialize(user);
-                            data.Append(fetchedUser + "," + Environment.NewLine);
-                        });
+                case 1:
+                    fetchedUsers.AddRange(UserRepository.SelectAll());
+                    fetchedUsers.ForEach(user =>
+                    {
+                        var fetchedUser = JsonSerializer.Serialize(user);
+                        data.Append(fetchedUser + "," + Environment.NewLine);
+                    });
 
-                        response.StatusCode = 200;
-                        response.SetContent(data.ToString());
-                        break;
-                    case 2:
-                        var fetchedSingleUser = UserRepository.SelectUser(resource[1]);
-                        data.Append(JsonSerializer.Serialize(fetchedSingleUser) + "," + Environment.NewLine);
+                    response.StatusCode = 200;
+                    response.SetContent(data.ToString());
+                    break;
+                case 2:
+                    var fetchedSingleUser = UserRepository.SelectUser(resource[1]);
+                    if (fetchedSingleUser== null) return ResponseTypes.NotFoundRequest;
+                    data.Append(JsonSerializer.Serialize(fetchedSingleUser) + "," + Environment.NewLine);
 
-                        response.StatusCode = 200;
-                        response.SetContent(data.ToString());
-                        break;
-                    default:
-                        return ResponseTypes.BadRequest;
-                }
+                    response.StatusCode = 200;
+                    response.SetContent(data.ToString());
+                    break;
+                default:
+                    return ResponseTypes.BadRequest;
             }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.Message);
-                Console.WriteLine(e.StackTrace);
-                return ResponseTypes.BadRequest;
-            }
-
+            
             return response;
         }
 

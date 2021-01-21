@@ -1,0 +1,187 @@
+[
+  [
+    {
+      "Uuid": "845f0dc7-37d0-426e-994e-43fc3ac83c08",
+      "Name": "WaterGoblin",
+      "CardType": "Goblin",
+      "ElementType": 1,
+      "Damage": 10.0
+    },
+    {
+      "Uuid": "99f8f8dc-e25e-4a95-aa2c-782823f36e2a",
+      "Name": "NormalDragon",
+      "CardType": "Dragon",
+      "ElementType": 0,
+      "Damage": 50.0
+    },
+    {
+      "Uuid": "e85e3976-7c86-4d06-9a80-641c2019a79f",
+      "Name": "WaterSpell",
+      "CardType": "Spell",
+      "ElementType": 1,
+      "Damage": 30.0
+    },
+    {
+      "Uuid": "1cb6ab86-bdb2-47e5-b6e4-68c5ab389334",
+      "Name": "NormalOrk",
+      "CardType": "Ork",
+      "ElementType": 0,
+      "Damage": 45.0
+    },
+    {
+      "Uuid": "dfdd758f-649c-40f9-ba3a-8657f4b3439f",
+      "Name": "FireSpell",
+      "CardType": "Spell",
+      "ElementType": 2,
+      "Damage": 30.0
+    }
+  ],
+  [
+    {
+      "Uuid": "e7c06908-1950-4233-94b6-e250923fc54e",
+      "Name": "FireDragon",
+      "CardType": "Dragon",
+      "ElementType": 2,
+      "Damage": 50.0
+    },
+    {
+      "Uuid": "71ff1e93-26ad-4756-aee2-818a3ab28b39",
+      "Name": "WaterOrk",
+      "CardType": "Ork",
+      "ElementType": 1,
+      "Damage": 45.0
+    },
+    {
+      "Uuid": "781d3449-475d-4ed0-ad83-4f2c954ea0f8",
+      "Name": "NormalSpell",
+      "CardType": "Spell",
+      "ElementType": 0,
+      "Damage": 30.0
+    },
+    {
+      "Uuid": "7fc1dc29-31ed-4032-ae5d-a6e496c32777",
+      "Name": "NormalWizard",
+      "CardType": "Wizard",
+      "ElementType": 0,
+      "Damage": 33.0
+    },
+    {
+      "Uuid": "fe5a30b2-3e7a-49fc-babf-5647e1d12f39",
+      "Name": "FireKnight",
+      "CardType": "Knight",
+      "ElementType": 2,
+      "Damage": 40.0
+    }
+  ],
+  [
+    {
+      "Uuid": "f5db12e7-90d8-4393-a983-dc654234ae49",
+      "Name": "WaterSpell",
+      "CardType": "Spell",
+      "ElementType": 1,
+      "Damage": 30.0
+    },
+    {
+      "Uuid": "8af539f8-53ff-4c77-baf4-8ccbbfc6584b",
+      "Name": "WaterKraken",
+      "CardType": "Kraken",
+      "ElementType": 1,
+      "Damage": 30.0
+    },
+    {
+      "Uuid": "407b8bc7-979c-4711-8a7f-6c39e618ff30",
+      "Name": "FireSpell",
+      "CardType": "Spell",
+      "ElementType": 2,
+      "Damage": 30.0
+    },
+    {
+      "Uuid": "5cb7a11a-130d-4fd3-97f6-dbc8d8431980",
+      "Name": "WaterKnight",
+      "CardType": "Knight",
+      "ElementType": 1,
+      "Damage": 40.0
+    },
+    {
+      "Uuid": "ccf4d64a-4249-4d20-895c-35325e35706f",
+      "Name": "NormalSpell",
+      "CardType": "Spell",
+      "ElementType": 0,
+      "Damage": 30.0
+    }
+  ],
+  [
+    {
+      "Uuid": "a391f8d9-01be-4500-8efb-c96df51531f7",
+      "Name": "FireWizard",
+      "CardType": "Wizard",
+      "ElementType": 2,
+      "Damage": 33.0
+    },
+    {
+      "Uuid": "0a21014e-1154-4ab7-9313-c50a54d00919",
+      "Name": "WaterDragon",
+      "CardType": "Dragon",
+      "ElementType": 1,
+      "Damage": 50.0
+    },
+    {
+      "Uuid": "ea3ad87b-fb97-468a-a3f4-848a7d6b7a49",
+      "Name": "FireDragon",
+      "CardType": "Dragon",
+      "ElementType": 2,
+      "Damage": 50.0
+    },
+    {
+      "Uuid": "62880cf7-60dc-4cc5-b7ab-b1cde3102351",
+      "Name": "NormalGoblin",
+      "CardType": "Goblin",
+      "ElementType": 0,
+      "Damage": 10.0
+    },
+    {
+      "Uuid": "b0d9aac3-1227-4795-8b19-8ceab5f10ace",
+      "Name": "FireGoblin",
+      "CardType": "Goblin",
+      "ElementType": 2,
+      "Damage": 10.0
+    }
+  ],
+  [
+    {
+      "Uuid": "7247c440-52a5-4469-9e2e-c6f51561355c",
+      "Name": "FireElve",
+      "CardType": "Elve",
+      "ElementType": 2,
+      "Damage": 40.0
+    },
+    {
+      "Uuid": "d440d953-b786-4a60-90b5-7e80e7c53889",
+      "Name": "WaterElve",
+      "CardType": "Elve",
+      "ElementType": 1,
+      "Damage": 40.0
+    },
+    {
+      "Uuid": "29514378-2ca2-4e89-84c3-d8a4be8d95c9",
+      "Name": "NormalElve",
+      "CardType": "Elve",
+      "ElementType": 0,
+      "Damage": 40.0
+    },
+    {
+      "Uuid": "d3643723-a7c4-48f0-be92-2ac0b6ba70a7",
+      "Name": "FireOrk",
+      "CardType": "Ork",
+      "ElementType": 2,
+      "Damage": 45.0
+    },
+    {
+      "Uuid": "287a50c8-ab11-4208-8314-ccb4dce5b9d8\n\n",
+      "Name": "NormalSpell",
+      "CardType": "Spell",
+      "ElementType": 0,
+      "Damage": 20.0
+    }
+  ]
+]

@@ -37,7 +37,7 @@ namespace mtcg.controller
             SessionList.Add(loginUser.Username, timestamp);
             SessionRepository.LogLogin(loginUser.Username, timestamp);
 
-            return new Response("Authenticated") {ContentType = "text/plain", StatusCode = 200};
+            return ResponseTypes.CustomResponse("Authenticated", 200, "text/plain");
         }
 
         public static Response GetLogs()

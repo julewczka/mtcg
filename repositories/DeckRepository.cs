@@ -35,28 +35,16 @@ namespace mtcg.repositories
             return deck;
         }
 
-        public static Deck ConfigureDeck(string token, string[] cardUuids)
+        public static Deck ConfigureDeck(string token, IEnumerable<string> cardUuids)
         {
             var cardList = new List<bool>();
             var user = UserRepository.SelectUserByToken(token);
-            Console.WriteLine($"User-Id:{user.Id}");
-
+            
             if (user == null) return null;
             user.Deck ??= GetDeckByUserUuid(user.Id);
-
-            Console.WriteLine($"UserDeck-Id:{user.Deck.Uuid}");
-
             if (user.Deck.Uuid == null) user.Deck = AddDeck(user.Id);
-
-            Console.WriteLine($"Card-Ids-Length:{cardUuids.Length}");
-
-            if (cardUuids.Length <= 0) return null;
-
+            
             var deckCards = GetCardsFromDeck(user.Deck.Uuid);
-
-            if (user.Deck.Uuid == null) user.Deck = AddDeck(user.Id);
-
-            Console.WriteLine($"deckCards-Length:{deckCards.Count}");
 
             if (deckCards.Count > 0)
             {
@@ -67,8 +55,6 @@ namespace mtcg.repositories
             {
                 cardList.AddRange(cardUuids.Select(cardUuid => AddRelationship(user.Deck.Uuid, cardUuid)));
             }
-            
-            Console.WriteLine($"CardList-Length:{cardList.Count}");
 
             if (cardList.Contains(false)) return null;
 

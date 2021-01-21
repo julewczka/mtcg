@@ -46,6 +46,7 @@ namespace mtcg.controller
 
         public static Response ConfigureDeck(string token, string cardUuids)
         {
+            var data = new StringBuilder();
             var removeBrackets =
                 cardUuids
                     .Remove(0, 1)
@@ -53,13 +54,11 @@ namespace mtcg.controller
                     .Replace("\"", string.Empty);
 
             var cardUuidsAsArray = removeBrackets.Split(", ");
-
-            var data = new StringBuilder();
-
-            if (cardUuidsAsArray.Length < 4) return ResponseTypes.BadRequest;
+            if (cardUuidsAsArray.Length < 4) return ResponseTypes.CustomError("you must insert 4 id's", 400);
+            
             var deck = DeckRepository.ConfigureDeck(token, cardUuidsAsArray);
-
             if (deck == null) return ResponseTypes.NotFoundRequest;
+            
             deck.Cards.ForEach(card => data.Append(JsonSerializer.Serialize(card) + "," + Environment.NewLine));
 
             return ResponseTypes.CustomResponse(data.ToString(), 200, "application/json");

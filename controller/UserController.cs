@@ -8,14 +8,16 @@ namespace mtcg.controller
 {
     public static class UserController
     {
-        public static Response Put(string username, string payload)
+        public static Response Put(string token, string username, string payload)
         {
+            if (token != "admin-mtcgToken" || !token.Contains(username)) return ResponseTypes.Forbidden;
+
             var updateUser = JsonSerializer.Deserialize<User>(payload);
             if (updateUser == null) return ResponseTypes.BadRequest;
             updateUser.Username = username;
 
             return UserRepository.UpdateUser(updateUser)
-                ? new Response("Updated") {ContentType = "text/plain", StatusCode = 201}
+                ? ResponseTypes.CustomResponse("Updated", 201, "text/plain")
                 : ResponseTypes.BadRequest;
         }
 
@@ -31,42 +33,41 @@ namespace mtcg.controller
                 : ResponseTypes.BadRequest;
         }
 
-        public static Response Get(IReadOnlyList<string> resource)
+        public static Response Get(string token, IReadOnlyList<string> resource)
         {
-            var response = new Response() {ContentType = "application/json"};
-            var fetchedUsers = new List<User>();
-            var data = new StringBuilder();
+            if (resource.Count > 1 && !token.Contains(resource[1])) return ResponseTypes.Forbidden;
             
+            var fetchedUsers = new List<User>();
+            var content = new StringBuilder();
+
             switch (resource.Count)
             {
                 case 1:
+                    if (token != "admin-mtcgToken") return ResponseTypes.Forbidden;
                     fetchedUsers.AddRange(UserRepository.SelectAll());
                     fetchedUsers.ForEach(user =>
-                    {
-                        var fetchedUser = JsonSerializer.Serialize(user);
-                        data.Append(fetchedUser + "," + Environment.NewLine);
-                    });
-
-                    response.StatusCode = 200;
-                    response.SetContent(data.ToString());
+                        {
+                            user.Deck = DeckRepository.GetDeckByUserUuid(user.Id);
+                            content.Append(JsonSerializer.Serialize(user) + "," + Environment.NewLine);
+                        }
+                    );
                     break;
                 case 2:
                     var fetchedSingleUser = UserRepository.SelectUserByUsername(resource[1]);
-                    if (fetchedSingleUser== null) return ResponseTypes.NotFoundRequest;
-                    data.Append(JsonSerializer.Serialize(fetchedSingleUser) + "," + Environment.NewLine);
-
-                    response.StatusCode = 200;
-                    response.SetContent(data.ToString());
+                    if (fetchedSingleUser == null) return ResponseTypes.NotFoundRequest;
+                    content.Append(JsonSerializer.Serialize(fetchedSingleUser) + "," + Environment.NewLine);
                     break;
                 default:
                     return ResponseTypes.BadRequest;
             }
-            
-            return response;
+
+            return ResponseTypes.CustomResponse(content.ToString(), 200, "application/json");
         }
 
-        public static Response Delete(string uuid)
+        public static Response Delete(string token, string uuid)
         {
+            if (token != "admin-mtcgToken") return ResponseTypes.Forbidden;
+
             return UserRepository.DeleteUser(uuid)
                 ? new Response("OK") {ContentType = "text/plain", StatusCode = 200}
                 : ResponseTypes.BadRequest;

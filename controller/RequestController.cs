@@ -14,11 +14,10 @@ namespace mtcg.controller
         {
             var protocol = request.Method;
             var resource = request.Url.Segments;
-            var authHeader = "";
             var token = "";
             if (request.Headers.ContainsKey("authorization"))
             {
-                authHeader = request.Headers["authorization"];
+                var authHeader = request.Headers["authorization"];
                 if (authHeader.Length > 5)
                 {
                     token = authHeader.Substring(5);
@@ -33,7 +32,7 @@ namespace mtcg.controller
                     "GET" => Get(token, resource),
                     "POST" => Post(token, resource, payload),
                     "PUT" => Put(token, resource, payload),
-                    "DELETE" => Delete(authHeader, resource),
+                    "DELETE" => Delete(token, resource),
                     _ => ResponseTypes.BadRequest
                 };
             }
@@ -66,7 +65,7 @@ namespace mtcg.controller
             return resource[0] switch
             {
                 "/" => response,
-                "users" => UserController.Get(resource),
+                "users" => UserController.Get(token, resource),
                 "sessions" => SessionController.GetLogs(),
                 "packages" => PackageController.Get(resource),
                 "stack" => StackController.Get(token),
@@ -114,7 +113,7 @@ namespace mtcg.controller
 
             return resource[0] switch
             {
-                "users" => UserController.Put(resource[1], payload),
+                "users" => UserController.Put(token,resource[1], payload),
                 "deck" => DeckController.ConfigureDeck(token, payload),
                 "cards" => ResponseTypes.MethodNotAllowed, //CardController.Put(resource[1], payload),
                 "sessions" => ResponseTypes.MethodNotAllowed,
@@ -123,13 +122,13 @@ namespace mtcg.controller
             };
         }
 
-        private static Response Delete(string authHeader, IReadOnlyList<string> resource)
+        private static Response Delete(string token, IReadOnlyList<string> resource)
         {
-            if (!IsUserAuthorized(authHeader)) return ResponseTypes.Unauthorized;
+            if (!IsUserAuthorized(token)) return ResponseTypes.Unauthorized;
             if (resource.Count < 2) return ResponseTypes.BadRequest;
             return resource[0] switch
             {
-                "users" => UserController.Delete(resource[1]),
+                "users" => UserController.Delete(token,resource[1]),
                 "cards" => ResponseTypes.MethodNotAllowed, //CardController.Delete(resource[1]),
                 "sessions" => ResponseTypes.MethodNotAllowed,
                 "/" => ResponseTypes.MethodNotAllowed,

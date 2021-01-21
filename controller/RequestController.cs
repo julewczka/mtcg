@@ -70,12 +70,12 @@ namespace mtcg.controller
                 "packages" => PackageController.Get(resource),
                 "stack" => StackController.Get(token),
                 "deck" => DeckController.GetDeckByToken(token),
+                "cards" => CardController.Get(token),
                 "transaction" => throw new NotImplementedException(),
                 "stats" => throw new NotImplementedException(),
                 "score" => throw new NotImplementedException(),
                 "battles" => throw new NotImplementedException(),
                 "tradings" => throw new NotImplementedException(),
-                "cards" => ResponseTypes.MethodNotAllowed, //CardController.Get(resource),
                 _ => ResponseTypes.NotFoundRequest
             };
         }

@@ -44,12 +44,12 @@ namespace mtcg.controller
         {
             var logs = SessionRepository.GetLogs();
             var data = new StringBuilder();
-            if (logs == null) return ResponseTypes.BadRequest;
+            if (logs == null) return ResponseTypes.NotFoundRequest;
 
             logs.ForEach(log => { data.Append(JsonSerializer.Serialize(log) + "," + Environment.NewLine); }
             );
 
-            return new Response(data.ToString()) {ContentType = "application/json", StatusCode = 200};
+            return ResponseTypes.CustomResponse(data.ToString(), 200, "application/json");
         }
 
         /**
@@ -79,10 +79,6 @@ namespace mtcg.controller
             CleanSessionList();
             return SessionList.ContainsKey(name);
         }
-
-        public static SortedDictionary<string, DateTime> GetSessionList()
-        {
-            return SessionList;
-        }
+        
     }
 }

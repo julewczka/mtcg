@@ -61,7 +61,7 @@ namespace mtcg.controller
             
             deck.Cards.ForEach(card => data.Append(JsonSerializer.Serialize(card) + "," + Environment.NewLine));
 
-            return ResponseTypes.CustomResponse(data.ToString(), 200, "application/json");
+            return ResponseTypes.Created;
         }
     }
 }

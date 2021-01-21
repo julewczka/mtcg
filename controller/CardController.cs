@@ -8,39 +8,25 @@ namespace mtcg.controller
 {
     public static class CardController
     {
-        public static Response Get(IReadOnlyList<string> resource)
+        public static Response Get(string token)
         {
-            var response = new Response() {ContentType = "application/json"};
             var fetchedCards = new List<Card>();
-            var data = new StringBuilder();
+            var content = new StringBuilder();
 
-            switch (resource.Count)
+            switch (token)
             {
-                case 1:
+                case "admin-mtcgToken":
                     fetchedCards.AddRange(CardRepository.SelectAll());
-                    fetchedCards.ForEach(card =>
-                    {
-                        var fetchedCard = JsonSerializer.Serialize(card);
-                        data.Append(fetchedCard + "," + Environment.NewLine);
-                    });
-                    response.StatusCode = 200;
-                    response.SetContent(data.ToString());
-                    break;
-                case 2:
-                    //resource[1] has to be the UUID of the card!
-                    var fetchedSingleCard = CardRepository.SelectById(resource[1]);
-                    if (fetchedSingleCard == null) return ResponseTypes.NotFoundRequest;
-                    
-                    data.Append(JsonSerializer.Serialize(fetchedSingleCard) + "," + Environment.NewLine);
-
-                    response.StatusCode = 200;
-                    response.SetContent(data.ToString());
+                    fetchedCards.ForEach(card => content.Append(JsonSerializer.Serialize(card) + "," + Environment.NewLine));
                     break;
                 default:
-                    return ResponseTypes.BadRequest;
+                    var user = UserRepository.SelectUserByToken(token);
+                    var cards = StackRepository.GetStack(user.Id);
+                    content.Append(JsonSerializer.Serialize(cards) + "," + Environment.NewLine);
+                    break;
             }
 
-            return response;
+            return ResponseTypes.CustomResponse(content.ToString(), 200, "application/json");
         }
 
         public static Response Post(string payload)
@@ -49,10 +35,10 @@ namespace mtcg.controller
             if (createCard == null) return ResponseTypes.BadRequest;
 
             return CardRepository.InsertCard(createCard)
-                ? new Response("Created") {ContentType = "text/plain", StatusCode = 201}
+                ? ResponseTypes.Created
                 : ResponseTypes.BadRequest;
         }
-        
+
         public static Response Put(string uuid, string payload)
         {
             var updateCard = JsonSerializer.Deserialize<Card>(payload);
@@ -60,14 +46,14 @@ namespace mtcg.controller
             updateCard.Uuid = uuid;
 
             return CardRepository.UpdateCard(updateCard)
-                ? new Response("Updated") {ContentType = "text/plain", StatusCode = 201}
+                ? ResponseTypes.Created
                 : ResponseTypes.BadRequest;
         }
 
         public static Response Delete(string uuid)
         {
             return CardRepository.DeleteCard(uuid)
-                ? new Response("OK") {ContentType = "text/plain", StatusCode = 200}
+                ? ResponseTypes.HttpOk
                 : ResponseTypes.BadRequest;
         }
     }

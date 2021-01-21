@@ -10,7 +10,6 @@ namespace mtcg.controller
     {
         public static Response Get(string token)
         {
-            var response = new Response() {ContentType = "application/json"};
             var data = new StringBuilder();
 
             var user = UserRepository.SelectUserByToken(token);
@@ -21,10 +20,7 @@ namespace mtcg.controller
             
             listStack.ForEach(card => { data.Append(JsonSerializer.Serialize(card)); });
 
-            response.StatusCode = 200;
-            response.SetContent(data.ToString());
-
-            return response;
+            return ResponseTypes.CustomResponse(data.ToString(), 200, "application/json");
         }
         
     }

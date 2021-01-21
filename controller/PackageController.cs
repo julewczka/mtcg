@@ -11,7 +11,6 @@ namespace mtcg.controller
         
         public static Response Get(IReadOnlyList<string> resource)
         {
-            var response = new Response() {ContentType = "application/json"};
             var fetchedPacks = new List<Package>();
             var data = new StringBuilder();
 
@@ -24,8 +23,6 @@ namespace mtcg.controller
                         var package = JsonSerializer.Serialize(pack);
                         data.Append(package + "," + Environment.NewLine);
                     });
-                    response.StatusCode = 200;
-                    response.SetContent(data.ToString());
                     break;
                 case 2:
                 //TODO: implement view for single package
@@ -34,7 +31,7 @@ namespace mtcg.controller
                     return ResponseTypes.BadRequest;
             }
 
-            return response;
+            return ResponseTypes.CustomResponse(data.ToString(), 200, "application/json");
         }
         public static Response Post(string token, string payload)
         {
@@ -42,7 +39,7 @@ namespace mtcg.controller
 
             var cards = JsonSerializer.Deserialize<Card[]>(payload);
             return PackageRepository.CreatePackage(cards)
-                ? new Response("Created") {ContentType = "text/plain", StatusCode = 201}
+                ? ResponseTypes.Created
                 : ResponseTypes.BadRequest;
         }
     }

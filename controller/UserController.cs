@@ -17,7 +17,7 @@ namespace mtcg.controller
             updateUser.Username = username;
 
             return UserRepository.UpdateUser(updateUser)
-                ? ResponseTypes.CustomResponse("Updated", 201, "text/plain")
+                ? ResponseTypes.Created
                 : ResponseTypes.BadRequest;
         }
 
@@ -29,7 +29,7 @@ namespace mtcg.controller
             createUser.Token = createUser.Username + "-mtcgToken";
 
             return UserRepository.InsertUser(createUser)
-                ? new Response("Created") {ContentType = "text/plain", StatusCode = 201}
+                ? ResponseTypes.Created
                 : ResponseTypes.BadRequest;
         }
 
@@ -69,7 +69,7 @@ namespace mtcg.controller
             if (token != "admin-mtcgToken") return ResponseTypes.Forbidden;
 
             return UserRepository.DeleteUser(uuid)
-                ? new Response("OK") {ContentType = "text/plain", StatusCode = 200}
+                ? ResponseTypes.HttpOk
                 : ResponseTypes.BadRequest;
         }
     }

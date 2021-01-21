@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using mtcg.controller;
 using Npgsql;
 
 namespace mtcg.repositories
@@ -38,29 +39,27 @@ namespace mtcg.repositories
             return cards;
         }
 
-        public static bool BuyPackage(string userUuid)
+        public static Response BuyPackage(string userUuid)
         {
             var buyPack = PackageRepository.SellPackage();
-            if (buyPack == null) return false;
+            if (buyPack == null) return ResponseTypes.CustomError("No package available at the moment!", 404);
 
             var user = UserRepository.SelectUserByUuid(userUuid);
-            if (user == null) return false;
-
-            if (user.Coins < buyPack.Price) return false;
+            if (user.Coins < buyPack.Price) return ResponseTypes.CustomError("Not enough coins!", 403);;
             user.Coins -= buyPack.Price;
             
             var stack = GetStackByUserId(userUuid);
-
             var stackUuid = stack.Id ?? CreateStack(userUuid);
-
-            if (string.IsNullOrEmpty(stackUuid)) return false;
+            if (string.IsNullOrEmpty(stackUuid)) return ResponseTypes.CustomError("Stack not found!", 404);
             
             var stackCards = buyPack.Cards.Select(card => AddRelationship(card.Uuid, stackUuid)).ToList();
-            if (!PackageRepository.DeletePackage(buyPack.Uuid)) return false;
+            if (!PackageRepository.DeletePackage(buyPack.Uuid)) return ResponseTypes.CustomError("package couldn't be deleted!", 500);
             
-            if (!UserRepository.UpdateUser(user)) return false;
+            if (!UserRepository.UpdateUser(user)) return ResponseTypes.CustomError("User couldn't be updated!", 500);;
             
-            return !stackCards.Contains(false);
+            return stackCards.Contains(false)
+                ? ResponseTypes.CustomError("Buying package failed!", 500)
+                : ResponseTypes.HttpOk;
         }
 
         private static bool AddRelationship(string cardUuid, string stackUuid)

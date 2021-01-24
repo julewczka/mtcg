@@ -1,4 +1,4 @@
-﻿namespace mtcg
+﻿namespace mtcg.classes.game.types.spell
 {
     public class WaterSpell : SpellCard
     {

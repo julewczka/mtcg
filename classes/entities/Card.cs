@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace mtcg
+﻿namespace mtcg.classes.entities
 {
     public class Card
     {

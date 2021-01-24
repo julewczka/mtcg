@@ -1,4 +1,6 @@
-﻿namespace mtcg
+﻿using mtcg.classes.entities;
+
+namespace mtcg.classes.game.types.spell
 {
     public class SpellCard : Card
     {

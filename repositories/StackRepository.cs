@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using mtcg.classes.entities;
 using mtcg.controller;
 using Npgsql;
 

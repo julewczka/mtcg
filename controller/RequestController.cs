@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Text.Json;
 using BIF.SWE1.Interfaces;
+using mtcg.classes.entities;
 using mtcg.repositories;
 using Npgsql;
 
@@ -80,12 +81,12 @@ namespace mtcg.controller
 
         private static Response Post(string token, IReadOnlyList<string> resource, string payload)
         {
-            if (resource[0] != "sessions")
-            {
-                if (!IsUserAuthorized(token)) return ResponseTypes.Unauthorized;
-            }
+            //if (resource[0] != "sessions")
+            //{
+            //    if (!IsUserAuthorized(token)) return ResponseTypes.Unauthorized;
+           // }
 
-            if (!IsValidJson(resource[0], payload)) return ResponseTypes.BadRequest;
+            //if (!IsValidJson(resource[0], payload)) return ResponseTypes.BadRequest;
             return resource[0] switch
             {
                 "users" => UserController.Post(payload),
@@ -95,9 +96,9 @@ namespace mtcg.controller
                 "deck" => DeckController.CreateDeck(token, payload),
                 "tradings" => TradingController.Post(token, resource, payload),
                 "transactions" => TransactionController.StartTransaction(resource[1], token),
+                "battles" => BattleController.Post(token),
                 "stats" => throw new NotImplementedException(),
                 "score" => throw new NotImplementedException(),
-                "battles" => throw new NotImplementedException(),
                 "cards" => ResponseTypes.MethodNotAllowed, //CardController.Post(payload),
                 "/" => ResponseTypes.MethodNotAllowed,
                 _ => ResponseTypes.NotFoundRequest

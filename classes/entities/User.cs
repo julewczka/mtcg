@@ -1,7 +1,6 @@
-﻿using System;
-using BIF.SWE1.Interfaces;
+﻿using BIF.SWE1.Interfaces;
 
-namespace mtcg
+namespace mtcg.classes.entities
 {
     public class User : IResource
     {

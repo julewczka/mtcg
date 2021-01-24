@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Text.Json;
+using mtcg.classes.entities;
 using mtcg.repositories;
 
 namespace mtcg.controller

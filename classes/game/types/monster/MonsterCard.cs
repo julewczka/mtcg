@@ -1,4 +1,7 @@
-﻿namespace mtcg
+﻿
+using mtcg.classes.entities;
+
+namespace mtcg.classes.game.types.monster
 {
     public class MonsterCard : Card
     {

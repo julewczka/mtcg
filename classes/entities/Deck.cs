@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace mtcg
+namespace mtcg.classes.entities
 {
     public class Deck
     {

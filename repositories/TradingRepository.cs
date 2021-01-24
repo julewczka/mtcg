@@ -115,7 +115,6 @@ namespace mtcg.repositories
 
         public static bool DeleteTrading(string tradingUuid)
         {
-            //TODO: Funktion einbauen, damit User selbst ihre Tradings löschen können
             using var connection = new NpgsqlConnection(Credentials);
             using var query =
                 new NpgsqlCommand("delete from trading where uuid::text = @uuid", connection);

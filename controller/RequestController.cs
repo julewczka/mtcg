@@ -129,6 +129,7 @@ namespace mtcg.controller
                 "users" => UserController.Delete(token, resource[1]),
                 "cards" => ResponseTypes.MethodNotAllowed, //CardController.Delete(resource[1]),
                 "sessions" => ResponseTypes.MethodNotAllowed,
+                "tradings" => TradingController.Delete(token, resource[1]),
                 "/" => ResponseTypes.MethodNotAllowed,
                 _ => ResponseTypes.NotFoundRequest
             };

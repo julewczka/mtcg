@@ -80,12 +80,12 @@ namespace mtcg.controller
 
         private static Response Post(string token, IReadOnlyList<string> resource, string payload)
         {
-            //if (resource[0] != "sessions")
-          //  {
-            //    if (!IsUserAuthorized(token)) return ResponseTypes.Unauthorized;
-         //   }
+            if (resource[0] != "sessions")
+            {
+                if (!IsUserAuthorized(token)) return ResponseTypes.Unauthorized;
+            }
 
-            //if (!IsValidJson(resource[0], payload)) return ResponseTypes.BadRequest;
+            if (!IsValidJson(resource[0], payload)) return ResponseTypes.BadRequest;
             return resource[0] switch
             {
                 "users" => UserController.Post(payload),
@@ -151,6 +151,7 @@ namespace mtcg.controller
                         JsonSerializer.Deserialize<Card>(json);
                         break;
                     case "tradings":
+                        //TODO: doesn't work for /tradings/deal-id
                         //JsonSerializer.Deserialize<Trading>(json);
                         break;
                     case "transactions":

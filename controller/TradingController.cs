@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Text.Json;
-using System.Threading;
 using mtcg.repositories;
 
 namespace mtcg.controller
@@ -38,48 +37,24 @@ namespace mtcg.controller
             switch (resource.Count)
             {
                 case 1:
-                    Console.WriteLine($"Test Start!");
+                    //TODO: hilfsmethode auslagern
+                    var user = UserRepository.SelectUserByToken(token);
                     var trading = JsonSerializer.Deserialize<Trading>(payload);
                     if (trading?.Uuid == null) return ResponseTypes.BadRequest;
-                    Console.WriteLine($"trading-uuid:{trading.Uuid}");
-
-                    var user = UserRepository.SelectUserByToken(token);
                     trading.Trader = user.Id;
-                    
                     var offeredCard = CardRepository.SelectCardByUuid(trading.CardToTrade);
-                    if (offeredCard?.Uuid == null) return ResponseTypes.BadRequest;
-
-                    Console.WriteLine($"offeredCard-uuid:{offeredCard.Uuid}");
-
                     var stack = StackRepository.GetStackByUserId(trading.Trader);
-                    if (stack?.Uuid == null) return ResponseTypes.BadRequest;
+                    var validate = ValidateRequestedDeal(token, trading, offeredCard, stack);
 
-                    Console.WriteLine($"trading-uuid:{stack.Uuid}");
-
-                    if (!StackRepository.IsCardInStack(offeredCard.Uuid, stack.Uuid)) return ResponseTypes.Forbidden;
-                    Console.WriteLine("Card is in Stack");
-
-                    if (DeckRepository.IsCardInDeck(offeredCard.Uuid)) return ResponseTypes.Forbidden;
-                    Console.WriteLine("Card is not in Deck");
-
-                    if (PackageRepository.IsCardInPackages(offeredCard.Uuid)) return ResponseTypes.Forbidden;
-                    Console.WriteLine("Card is not in Package");
-
-                    
-                    Console.WriteLine("Test");
-                    
-                    if (!TradingRepository.InsertTradingDeal(trading)) return ResponseTypes.BadRequest;
+                    if (validate == null)
+                    {
+                        if (!TradingRepository.InsertTradingDeal(trading)) return ResponseTypes.BadRequest;   
+                    }
                     break;
                 case 2:
-                    Console.WriteLine($"payload #1: {payload}");
-                    Console.WriteLine($"Test WL");
                     var cleanPayload = payload.Replace("\"", string.Empty);
-                    Console.WriteLine($"payload #2: {cleanPayload}");
-                    Console.WriteLine($"StartTest");
                     if (!ValidateTrade(resource[1], cleanPayload, token)) return ResponseTypes.BadRequest;
-                    Console.WriteLine("MiddleTest");
                     if (!TradingRepository.StartToTrade(resource[1], cleanPayload, token)) return ResponseTypes.BadRequest;
-                    Console.WriteLine("EndTest");
                     break;
                 default:
                     return ResponseTypes.BadRequest;
@@ -87,7 +62,18 @@ namespace mtcg.controller
 
             return ResponseTypes.Created;
         }
-        
+
+        private static Response ValidateRequestedDeal(string token, Trading trading, Card offeredCard, Stack stack)
+        {
+            if (UserRepository.SelectUserByToken(token).Id == null) return ResponseTypes.Forbidden;
+            if (offeredCard?.Uuid == null) return ResponseTypes.NotFoundRequest;
+            if (stack?.Uuid == null) return ResponseTypes.Forbidden;
+            if (!StackRepository.IsCardInStack(offeredCard.Uuid, stack.Uuid)) return ResponseTypes.Forbidden;
+            if (DeckRepository.IsCardInDeck(offeredCard.Uuid)) return ResponseTypes.Forbidden;
+            if (PackageRepository.IsCardInPackages(offeredCard.Uuid)) return ResponseTypes.Forbidden;
+
+            return null;
+        }
         private static bool ValidateTrade(string tradingUuid, string cardUuid,string token)
         {
             var trading = TradingRepository.GetDealByUuid(tradingUuid);

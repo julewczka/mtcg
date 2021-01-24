@@ -96,39 +96,26 @@ namespace mtcg.repositories
 
         public static bool StartToTrade(string tradingUuid, string cardUuid, string token)
         {
+            //TODO: transactions verwenden
             var tradingTarget = GetDealByUuid(tradingUuid);
             var targetCard = CardRepository.SelectCardByUuid(tradingTarget.CardToTrade);
             var oldOwner = UserRepository.SelectUserByUuid(tradingTarget.Trader);
             var oldOwnerStack = StackRepository.GetStackByUserId(oldOwner.Id);
-            Console.WriteLine($"OldOwnerStack:{oldOwnerStack.Uuid}");
             var newOwner = UserRepository.SelectUserByToken(token);
             var newOwnerStack = StackRepository.GetStackByUserId(newOwner.Id);
-            Console.WriteLine($"NewOwnerStack:{newOwnerStack.Uuid}");
-            
-            Console.WriteLine($"card-uuid #1:{cardUuid}");
-            Console.WriteLine($"card-uuid-length #1:{cardUuid.Length}");
-            Console.WriteLine($"card-uuid #2:{targetCard.Uuid}");
-            Console.WriteLine($"card-uuid-length #2:{targetCard.Uuid.Length}");
-            
+
             if (!SwitchCardOwner(newOwner.Id, targetCard.Uuid)) return false;
-            Console.WriteLine($"Switched target card to new owner");
             if (!StackRepository.DeleteCardFromStackByCardUuid(oldOwnerStack.Uuid,targetCard.Uuid)) return false;
-            Console.WriteLine($"Target card is deleted from Stack");
-
             if (!SwitchCardOwner(oldOwner.Id, cardUuid)) return false;
-            Console.WriteLine($"switched card to trade to old owner");
-
             if (!StackRepository.DeleteCardFromStackByCardUuid(newOwnerStack.Uuid,cardUuid)) return false;
-            Console.WriteLine($"card to trade is deleted from Stack");
-
             if (!DeleteTrading(tradingUuid)) return false;
-            Console.WriteLine($"Trade is deleted");
-
+            
             return true;
         }
 
         public static bool DeleteTrading(string tradingUuid)
         {
+            //TODO: Funktion einbauen, damit User selbst ihre Tradings löschen können
             using var connection = new NpgsqlConnection(Credentials);
             using var query =
                 new NpgsqlCommand("delete from trading where uuid::text = @uuid", connection);

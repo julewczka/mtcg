@@ -9,6 +9,8 @@ namespace mtcg.types
         public string Looser { get; set; }
         public Card WinningCard { get; set; }
         public Card LoosingCard { get; set; }
+        public Deck WinningDeck { get; set; }
+        public Deck LoosingDeck { get; set; }
 
     }
 }

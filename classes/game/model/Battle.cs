@@ -29,43 +29,77 @@ namespace mtcg.classes.game.model
             oldDeck1.Cards = DeckRepository.GetCardsFromDeck(oldDeck1.Uuid);
             ;
             Deck1 = InitializeDeckInTypes(oldDeck1.Cards);
-            Console.WriteLine($"Starter Deck: {ShowDeckInJson(Deck1.Cards)}");
+            Console.WriteLine($"Starter Deck: {Deck1.Uuid} {Environment.NewLine} {ShowDeckInJson(Deck1.Cards)}");
 
             var oldDeck2 = DeckRepository.GetDeckByUserUuid(User2.Id);
             oldDeck2.Cards = DeckRepository.GetCardsFromDeck(oldDeck2.Uuid);
             Deck2 = InitializeDeckInTypes(oldDeck2.Cards);
-            Console.WriteLine($"Seconds Deck: {ShowDeckInJson(Deck2.Cards)}");
+            Console.WriteLine($"Seconds Deck: {Deck2.Uuid} {Environment.NewLine} {ShowDeckInJson(Deck2.Cards)}");
 
             Console.WriteLine("StartBattle:");
-            StartBattle(Deck1, Deck2);
+            StartBattle();
         }
 
-        public void StartBattle(Deck deck1, Deck deck2)
+        public void StartBattle()
         {
             for (var i = 0; i < Rounds; i++)
             {
                 Console.WriteLine();
-                var randomCard1 = deck1.Cards[(new Random()).Next(0, deck1.Cards.Count)];
-                var randomCard2 = deck2.Cards[(new Random()).Next(0, deck2.Cards.Count)];
+                var randomCard1 = Deck1.Cards[(new Random()).Next(0, Deck1.Cards.Count)];
+                var randomCard2 = Deck2.Cards[(new Random()).Next(0, Deck2.Cards.Count)];
+                Console.WriteLine($"Deck1-Count: {Deck1.Cards.Count}");
+                Console.WriteLine($"Deck2-Count: {Deck2.Cards.Count}");
+
                 Console.WriteLine($"Round {i}");
                 var round = CalcBattle(randomCard1, randomCard2);
                 round.RoundCount = i;
-                Console.WriteLine($"winner is {round.Winner} with {round.WinningCard.Name}, {round.WinningCard.Damage}");
-                Console.WriteLine($"looser is {round.Looser} with {round.LoosingCard.Name}, {round.LoosingCard.Damage}");
+                Console.WriteLine(
+                    $"winner is {round.Winner} with {round.WinningCard.Name}, {round.WinningCard.Damage} and {round.LoosingCard.Name} is added to the deck {round.WinningDeck.Uuid}");
+                Console.WriteLine(
+                    $"looser is {round.Looser} with {round.LoosingCard.Name}, {round.LoosingCard.Damage} and {round.LoosingCard.Name} is removed from the deck {round.LoosingDeck.Uuid}");
+
+                SwitchCardFromDeck(round.LoosingCard, round.WinningDeck, round.LoosingDeck);
+                Console.WriteLine($"Deck1-Count-After-Round {i}: {Deck1.Cards.Count}");
+                Console.WriteLine($"Deck2-Count-After-Round {i}: {Deck2.Cards.Count}");
+
+                if (round.LoosingDeck.Cards.Count == 0)
+                {
+                    Console.WriteLine($"{round.Winner} won the game!");
+                    return;
+                }
+
                 Console.WriteLine();
             }
         }
 
+        private void SwitchCardFromDeck(Card card, Deck winDeck, Deck looseDeck)
+        {
+            looseDeck.DeleteCardFromDeck(card);
+            winDeck.AddCardToDeck(card);
+            if (winDeck.Uuid == Deck1.Uuid)
+            {
+                Deck1 = winDeck;
+                Deck2 = looseDeck;
+            }
+            else
+            {
+                Deck1 = looseDeck;
+                Deck2 = winDeck;
+            }
+        }
+
+
         private Round CalcBattle(Card card1, Card card2)
         {
             Console.WriteLine($"{card1.Name}, {card1.Damage} vs {card2.Name}, {card2.Damage}");
-            var round = SpecialConditions(card1,card2);
+
+            var round = SpecialConditions(card1, card2);
             if (round.Winner != null) return round;
-            
+
             if (card1.CardType == "monster" && card2.CardType == "monster") return BattleOnlyDamage(card1, card2);
 
             if (card1.CardType == "spell" || card2.CardType == "spell") return BattleWithSpells(card1, card2);
-            
+
             return round;
         }
 
@@ -79,6 +113,8 @@ namespace mtcg.classes.game.model
                 round.Looser = User1.Username;
                 round.WinningCard = card2;
                 round.LoosingCard = card1;
+                round.WinningDeck = Deck2;
+                round.LoosingDeck = Deck1;
             }
 
             if (card1.Damage > card2.Damage)
@@ -87,6 +123,8 @@ namespace mtcg.classes.game.model
                 round.Looser = User2.Username;
                 round.WinningCard = card1;
                 round.LoosingCard = card2;
+                round.WinningDeck = Deck1;
+                round.LoosingDeck = Deck2;
             }
             else
             {
@@ -94,6 +132,8 @@ namespace mtcg.classes.game.model
                 round.Looser = User1.Username;
                 round.WinningCard = card2;
                 round.LoosingCard = card1;
+                round.WinningDeck = Deck2;
+                round.LoosingDeck = Deck1;
             }
 
             return round;
@@ -120,6 +160,8 @@ namespace mtcg.classes.game.model
                 round.Looser = User1.Username;
                 round.WinningCard = card2;
                 round.LoosingCard = card1;
+                round.WinningDeck = Deck2;
+                round.LoosingDeck = Deck1;
             }
 
             //Dragon vs FireElves
@@ -130,6 +172,8 @@ namespace mtcg.classes.game.model
                 round.Looser = User1.Username;
                 round.WinningCard = card2;
                 round.LoosingCard = card1;
+                round.WinningDeck = Deck2;
+                round.LoosingDeck = Deck1;
             }
 
             //Knight vs WaterSpells
@@ -139,13 +183,18 @@ namespace mtcg.classes.game.model
                 round.Looser = User1.Username;
                 round.WinningCard = card2;
                 round.LoosingCard = card1;
+                round.WinningDeck = Deck2;
+                round.LoosingDeck = Deck1;
             }
+
             if (card1.GetType() == typeof(WaterSpell) && card2.GetType() == typeof(Knight))
             {
                 round.Winner = User1.Username;
                 round.Looser = User2.Username;
                 round.WinningCard = card1;
                 round.LoosingCard = card2;
+                round.WinningDeck = Deck1;
+                round.LoosingDeck = Deck2;
             }
 
             //Kraken vs Spells
@@ -155,13 +204,18 @@ namespace mtcg.classes.game.model
                 round.Looser = User2.Username;
                 round.WinningCard = card1;
                 round.LoosingCard = card2;
+                round.WinningDeck = Deck1;
+                round.LoosingDeck = Deck2;
             }
+
             if (card1.GetType() == typeof(SpellCard) && card2.GetType() == typeof(Kraken))
             {
                 round.Winner = User2.Username;
                 round.Looser = User1.Username;
                 round.WinningCard = card2;
                 round.LoosingCard = card1;
+                round.WinningDeck = Deck2;
+                round.LoosingDeck = Deck1;
             }
 
             return round;
@@ -198,7 +252,7 @@ namespace mtcg.classes.game.model
                 //Water vs Normal
                 case ElementType.Water when card2.ElementType == ElementType.Normal:
                     Console.WriteLine("not effective!");
-                    c1.Damage /= 2; 
+                    c1.Damage /= 2;
                     return BattleOnlyDamage(c1, c2);
                 //Fire vs Normal
                 case ElementType.Fire when card2.ElementType == ElementType.Normal:

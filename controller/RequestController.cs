@@ -69,23 +69,23 @@ namespace mtcg.controller
                 "stack" => StackController.Get(token),
                 "deck" => DeckController.GetDeckByToken(token),
                 "cards" => CardController.Get(token),
+                "tradings" => TradingController.Get(resource),
                 "transaction" => throw new NotImplementedException(),
                 "stats" => throw new NotImplementedException(),
                 "score" => throw new NotImplementedException(),
                 "battles" => throw new NotImplementedException(),
-                "tradings" => throw new NotImplementedException(),
                 _ => ResponseTypes.NotFoundRequest
             };
         }
 
         private static Response Post(string token, IReadOnlyList<string> resource, string payload)
         {
-            if (resource[0] != "sessions")
-            {
-                if (!IsUserAuthorized(token)) return ResponseTypes.Unauthorized;
-            }
+            //if (resource[0] != "sessions")
+          //  {
+            //    if (!IsUserAuthorized(token)) return ResponseTypes.Unauthorized;
+         //   }
 
-            if (!IsValidJson(resource[0], payload)) return ResponseTypes.BadRequest;
+            //if (!IsValidJson(resource[0], payload)) return ResponseTypes.BadRequest;
             return resource[0] switch
             {
                 "users" => UserController.Post(payload),
@@ -93,11 +93,11 @@ namespace mtcg.controller
                 "packages" => PackageController.Post(token, payload),
                 "stack" => ResponseTypes.MethodNotAllowed,
                 "deck" => DeckController.CreateDeck(token, payload),
+                "tradings" => TradingController.Post(token, resource, payload),
                 "transactions" => TransactionController.StartTransaction(resource[1], token),
                 "stats" => throw new NotImplementedException(),
                 "score" => throw new NotImplementedException(),
                 "battles" => throw new NotImplementedException(),
-                "tradings" => throw new NotImplementedException(),
                 "cards" => ResponseTypes.MethodNotAllowed, //CardController.Post(payload),
                 "/" => ResponseTypes.MethodNotAllowed,
                 _ => ResponseTypes.NotFoundRequest
@@ -136,6 +136,7 @@ namespace mtcg.controller
 
         private static bool IsValidJson(string resource, string json)
         {
+            Console.WriteLine($"JSON:{json}");
             try
             {
                 switch (resource)
@@ -148,6 +149,9 @@ namespace mtcg.controller
                         break;
                     case "cards":
                         JsonSerializer.Deserialize<Card>(json);
+                        break;
+                    case "tradings":
+                        //JsonSerializer.Deserialize<Trading>(json);
                         break;
                     case "transactions":
                         return true;

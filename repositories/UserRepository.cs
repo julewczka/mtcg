@@ -86,6 +86,7 @@ namespace mtcg.repositories
         public static User SelectUserByUuid(string uuid)
         {
             var user = new User();
+            
             try
             {
                 using (var connection = new NpgsqlConnection(Credentials))

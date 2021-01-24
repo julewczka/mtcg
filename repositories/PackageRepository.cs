@@ -59,6 +59,27 @@ namespace mtcg.repositories
             }
         }
 
+        public static bool IsCardInPackages(string cardUuid)
+        {
+            using var connection = new NpgsqlConnection(Credentials);
+            using var query =
+                new NpgsqlCommand(
+                    "select * from pack_cards where card_uuid::text = @card_uuid",
+                    connection);
+            query.Parameters.AddWithValue("card_uuid", cardUuid);
+            connection.Open();
+            try
+            {
+                return query.ExecuteScalar() != null;
+            }
+            catch (PostgresException pe)
+            {
+                Console.WriteLine(pe.Message);
+                Console.WriteLine(pe.StackTrace);
+                return false;
+            }
+        }
+
         private static bool DestroyPackRelation(string packUuid)
         {
             using var connection = new NpgsqlConnection(Credentials);

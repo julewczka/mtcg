@@ -170,5 +170,23 @@ namespace mtcg.repositories
 
             return cards;
         }
+
+        public static bool IsCardInDeck(string cardUuid)
+        {
+            using var connection = new NpgsqlConnection(Credentials);
+            using var query = new NpgsqlCommand("select * from deck_cards where card_uuid::text = @card_uuid",connection);
+            query.Parameters.AddWithValue("card_uuid", cardUuid);
+            connection.Open();
+            try
+            {
+                return query.ExecuteScalar() != null;
+            }
+            catch (PostgresException pe)
+            {
+                Console.WriteLine(pe.Message);
+                Console.WriteLine(pe.StackTrace);
+                return false;
+            }
+        }
     }
 }

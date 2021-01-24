@@ -42,29 +42,29 @@ namespace mtcg.repositories
             return retrievedCards;
         }
 
-        public static Card SelectById(string uuid)
+        public static Card SelectCardByUuid(string uuid)
         {
             var card = new Card();
+            using var connection = new NpgsqlConnection(Credentials);
+            using var query = new NpgsqlCommand("select * from card where uuid::text = @uuid", connection);
+            query.Parameters.AddWithValue("uuid", uuid);
+            connection.Open();
             try
             {
-                using (var connection = new NpgsqlConnection(Credentials))
+                var fetch = query.ExecuteReader();
+                while (fetch.Read())
                 {
-                    using var query = new NpgsqlCommand("select * from card where uuid::text = @uuid", connection);
-                    query.Parameters.AddWithValue("uuid", uuid);
-                    connection.Open();
-                    var fetch = query.ExecuteReader();
-                    while (fetch.Read())
-                    {
-                        card.Uuid = fetch["uuid"].ToString();
-                        card.Name = fetch["name"].ToString();
-                        card.ElementType = Card.GetElementType(fetch["element_type"].ToString());
-                        card.CardType = fetch["card_type"].ToString();
-                        card.Damage = (double) fetch["damage"];
-                    }
+                    card.Uuid = fetch["uuid"].ToString();
+                    card.Name = fetch["name"].ToString();
+                    card.ElementType = Card.GetElementType(fetch["element_type"].ToString());
+                    card.CardType = fetch["card_type"].ToString();
+                    card.Damage = (double) fetch["damage"];
                 }
             }
-            catch (PostgresException)
+            catch (PostgresException pe)
             {
+                Console.WriteLine(pe.Message);
+                Console.WriteLine(pe.StackTrace);
                 return null;
             }
 
@@ -122,7 +122,7 @@ namespace mtcg.repositories
                 return false;
             }
         }
-        
+
         public static bool DeleteCard(string uuid)
         {
             using var connection = new NpgsqlConnection(Credentials);

@@ -8,6 +8,8 @@ namespace mtcg.controller
 {
     public static class StackController
     {
+        private static readonly List<Card> LockList = new();
+
         public static Response Get(string token)
         {
             var data = new StringBuilder();
@@ -22,6 +24,10 @@ namespace mtcg.controller
 
             return ResponseTypes.CustomResponse(data.ToString(), 200, "application/json");
         }
-        
+
+        public static bool IsLocked(Card card)
+        {
+            return LockList.Contains(card);
+        }
     }
 }

@@ -10,7 +10,7 @@ namespace mtcg.repositories
     {
         private const string Credentials =
             "Server=127.0.0.1;Port=5432;Database=mtcg-db;User Id=mtcg-user;Password=mtcg-pw";
-        
+
         /// <summary>
         /// Show all acquired cards
         /// </summary>
@@ -22,17 +22,17 @@ namespace mtcg.repositories
 
             var stack = GetStackByUserId(uuid);
 
-            if (stack?.Id == null) return null;
+            if (stack?.Uuid == null) return null;
 
-            var cardUuids = GetCardUuidsInStack(stack.Id);
+            var cardUuids = GetCardUuidsInStack(stack.Uuid);
             if (cardUuids == null) return null;
 
 
             cardUuids.ForEach(cardUuid =>
             {
-                if (CardRepository.SelectById(cardUuid) != null)
+                if (CardRepository.SelectCardByUuid(cardUuid) != null)
                 {
-                    cards.Add(CardRepository.SelectById(cardUuid));
+                    cards.Add(CardRepository.SelectCardByUuid(cardUuid));
                 }
             });
 
@@ -45,18 +45,21 @@ namespace mtcg.repositories
             if (buyPack == null) return ResponseTypes.CustomError("No package available at the moment!", 404);
 
             var user = UserRepository.SelectUserByUuid(userUuid);
-            if (user.Coins < buyPack.Price) return ResponseTypes.CustomError("Not enough coins!", 403);;
+            if (user.Coins < buyPack.Price) return ResponseTypes.CustomError("Not enough coins!", 403);
+            ;
             user.Coins -= buyPack.Price;
-            
+
             var stack = GetStackByUserId(userUuid);
-            var stackUuid = stack.Id ?? CreateStack(userUuid);
+            var stackUuid = stack.Uuid ?? CreateStack(userUuid);
             if (string.IsNullOrEmpty(stackUuid)) return ResponseTypes.CustomError("Stack not found!", 404);
-            
+
             var stackCards = buyPack.Cards.Select(card => AddRelationship(card.Uuid, stackUuid)).ToList();
-            if (!PackageRepository.DeletePackage(buyPack.Uuid)) return ResponseTypes.CustomError("package couldn't be deleted!", 500);
-            
-            if (!UserRepository.UpdateUser(user)) return ResponseTypes.CustomError("User couldn't be updated!", 500);;
-            
+            if (!PackageRepository.DeletePackage(buyPack.Uuid))
+                return ResponseTypes.CustomError("package couldn't be deleted!", 500);
+
+            if (!UserRepository.UpdateUser(user)) return ResponseTypes.CustomError("User couldn't be updated!", 500);
+            ;
+
             return stackCards.Contains(false)
                 ? ResponseTypes.CustomError("Buying package failed!", 500)
                 : ResponseTypes.HttpOk;
@@ -107,7 +110,7 @@ namespace mtcg.repositories
             return uuid;
         }
 
-        private static Stack GetStackByUserId(string uuid)
+        public static Stack GetStackByUserId(string uuid)
         {
             var stack = new Stack();
             using var connection = new NpgsqlConnection(Credentials);
@@ -119,7 +122,7 @@ namespace mtcg.repositories
                 var fetch = query.ExecuteReader();
                 while (fetch.Read())
                 {
-                    stack.Id = fetch["uuid"].ToString();
+                    stack.Uuid = fetch["uuid"].ToString();
                 }
             }
             catch (PostgresException)
@@ -128,6 +131,50 @@ namespace mtcg.repositories
             }
 
             return stack;
+        }
+
+        public static bool DeleteCardFromStackByCardUuid(string stackUuid, string cardUuid)
+        {
+            using var connection = new NpgsqlConnection(Credentials);
+            using var query =
+                new NpgsqlCommand("delete from stack_cards where stack_uuid::text = @stack_uuid and card_uuid::text = @card_uuid", connection);
+            query.Parameters.AddWithValue("stack_uuid", stackUuid);
+            query.Parameters.AddWithValue("card_uuid", cardUuid);
+            connection.Open();
+            try
+            {
+                var result = query.ExecuteNonQuery() > 0;
+                connection.Close();
+                return result;
+            }
+            catch (Exception pe)
+            {
+                Console.WriteLine(pe.Message);
+                Console.WriteLine(pe.StackTrace);
+                return false;
+            }
+        }
+
+        public static bool IsCardInStack(string cardUuid, string stackUuid)
+        {
+            using var connection = new NpgsqlConnection(Credentials);
+            using var query =
+                new NpgsqlCommand(
+                    "select * from stack_cards where stack_uuid::text = @stack_uuid and card_uuid::text = @card_uuid",
+                    connection);
+            query.Parameters.AddWithValue("stack_uuid", stackUuid);
+            query.Parameters.AddWithValue("card_uuid", cardUuid);
+            connection.Open();
+            try
+            {
+                return query.ExecuteScalar() != null;
+            }
+            catch (PostgresException pe)
+            {
+                Console.WriteLine(pe.Message);
+                Console.WriteLine(pe.StackTrace);
+                return false;
+            }
         }
 
         private static List<string> GetCardUuidsInStack(string stackUuid)

@@ -45,6 +45,7 @@ namespace mtcg.classes.game.model
             for (var i = 0; i < Rounds; i++)
             {
                 Console.WriteLine();
+                //TODO: Calculate Spell-ElementType-Damage correctly
                 var randomCard1 = Deck1.Cards[(new Random()).Next(0, Deck1.Cards.Count)];
                 var randomCard2 = Deck2.Cards[(new Random()).Next(0, Deck2.Cards.Count)];
                 Console.WriteLine($"Deck1-Count: {Deck1.Cards.Count}");
@@ -65,6 +66,10 @@ namespace mtcg.classes.game.model
                 if (round.LoosingDeck.Cards.Count == 0)
                 {
                     Console.WriteLine($"{round.Winner} won the game!");
+                    var updateUser = UserRepository.SelectUserByUsername(round.Winner);
+                    if (updateUser?.Id == null) return;
+                    updateUser.Coins += 5;
+                    UserRepository.UpdateUser(updateUser);
                     return;
                 }
 

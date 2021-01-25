@@ -13,48 +13,51 @@ namespace mtcg.classes.game.model
 {
     public class Battle
     {
-        private static readonly object BattleLock = new();
         private const int Rounds = 100;
         private User User1 { get; set; }
         private User User2 { get; set; }
         private Deck Deck1 { get; set; }
         private Deck Deck2 { get; set; }
-        private readonly StringBuilder battleLog = new();
+        private Stats Stats1 { get; set; }
+        private Stats Stats2 { get; set; }
+        private readonly StringBuilder _battleLog = new();
 
         //TODO: Error-Handling if deck does not exist
         public Battle(User player1, User player2)
         {
             var nl = Environment.NewLine;
             ChooseStarter(player1, player2);
-            battleLog.Append($"Starter: {User1.Username}{nl}");
-            battleLog.Append($"Second: {User2.Username}{nl}");
+            _battleLog.Append($"Starter: {User1.Username}{nl}");
+            _battleLog.Append($"Second: {User2.Username}{nl}");
 
             var oldDeck1 = DeckRepository.GetDeckByUserUuid(User1.Id);
             oldDeck1.Cards = DeckRepository.GetCardsFromDeck(oldDeck1.Uuid);
-            
+
             Deck1 = InitializeDeckInTypes(oldDeck1.Cards);
-            battleLog.Append($"Starter Deck: {Deck1.Uuid} {nl} {ShowDeckInJson(Deck1.Cards)} {nl}");
-            
+            _battleLog.Append($"Starter Deck: {Deck1.Uuid} {nl} {ShowDeckInJson(Deck1.Cards)} {nl}");
+
             var oldDeck2 = DeckRepository.GetDeckByUserUuid(User2.Id);
             oldDeck2.Cards = DeckRepository.GetCardsFromDeck(oldDeck2.Uuid);
             Deck2 = InitializeDeckInTypes(oldDeck2.Cards);
-            battleLog.Append($"Seconds Deck: {Deck2.Uuid} {nl} {ShowDeckInJson(Deck2.Cards)} {nl}");
+            _battleLog.Append($"Seconds Deck: {Deck2.Uuid} {nl} {ShowDeckInJson(Deck2.Cards)} {nl}");
+
+            Stats1 = SetupStats(User1.Id);
+            Stats2 = SetupStats(User2.Id);
         }
 
         public Response StartBattle()
         {
             var nl = Environment.NewLine;
-            var content = new StringBuilder(battleLog +nl);
+            var content = new StringBuilder(_battleLog + nl);
             content.Append("Start battle:" + nl);
 
             for (var i = 1; i <= Rounds; i++)
             {
                 content.Append($"Round {i}" + nl);
-                
-                //TODO: Calculate Spell-ElementType-Damage correctly
+
                 var randomCard1 = Deck1.Cards[(new Random()).Next(0, Deck1.Cards.Count)];
                 var randomCard2 = Deck2.Cards[(new Random()).Next(0, Deck2.Cards.Count)];
-                
+
                 content.Append($"{User1.Username}'s deck size: {Deck1.Cards.Count}" + nl);
                 content.Append($"{User2.Username}'s deck size: {Deck2.Cards.Count}" + nl);
 
@@ -67,27 +70,64 @@ namespace mtcg.classes.game.model
                 SwitchCardFromDeck(round.LoosingCard, round.WinningDeck, round.LoosingDeck);
                 content.Append(
                     $"winner is {round.Winner} with {round.WinningCard.Name}, {round.WinningCard.Damage} and {round.LoosingCard.Name} is added to the deck {round.WinningDeck.Uuid}" +
-                    nl +
-                    $"{User1.Username}'s deck size after round {i}: {Deck1.Cards.Count}" + nl);
+                    $"{nl}{User1.Username}'s deck size after round {i}: {Deck1.Cards.Count}{nl}"
+                );
                 content.Append(
                     $"looser is {round.Looser} with {round.LoosingCard.Name}, {round.LoosingCard.Damage} and {round.LoosingCard.Name} is removed from the deck {round.LoosingDeck.Uuid}" +
-                    nl +
-                    $"{User2.Username}'s deck size after round {i}: {Deck2.Cards.Count}" + nl +nl);
+                    $"{nl}{User2.Username}'s deck size after round {i}: {Deck2.Cards.Count}{nl}{nl}"
+                );
 
                 if (round.LoosingDeck.Cards.Count == 0)
                 {
-                    content.Append($"{round.Winner} won the game!" +
-                                   nl +
+                    content.Append($"{round.Winner} won the game!{nl}" +
                                    $"{round.Winner} gained 5 coins");
-                    var updateUser = UserRepository.SelectUserByUsername(round.Winner);
-                    updateUser.Coins += 5;
-                    return !UserRepository.UpdateUser(updateUser)
-                        ? ResponseTypes.CustomError("Something went wrong", 403)
-                        : ResponseTypes.CustomResponse(content.ToString(), 200, "text/plain");
+                    UpdateStats(round.Winner);
+                    return AddCoins(round.Winner, content.ToString());
                 }
             }
 
             return ResponseTypes.CustomResponse(content.ToString(), 200, "text/plain");
+        }
+
+        private void UpdateStats(string winnerUuid)
+        {
+            if (Stats1.UserUuid == winnerUuid)
+            {
+                Stats1.Wins += 1;
+                Stats1.Elo += 3;
+                Stats2.Losses += 1;
+                Stats2.Elo -= 5;
+            }
+            else
+            {
+                Stats2.Wins += 1;
+                Stats2.Elo += 3;
+                Stats1.Losses += 1;
+                Stats1.Elo -= 5;
+            }
+
+            StatsRepository.UpdateStats(Stats1);
+            StatsRepository.UpdateStats(Stats2);
+        }
+
+        private Stats SetupStats(string userUuid)
+        {
+            var stats = StatsRepository.SelectStatsByUserUuid(userUuid);
+            if (stats?.UserUuid != null) return stats;
+
+            var statsUuid = StatsController.CreateStatsIfNotExist(User1.Id);
+            stats = StatsRepository.SelectStatsByStatsUuid(statsUuid);
+
+            return stats;
+        }
+
+        private Response AddCoins(string winnerUuid, string content)
+        {
+            var updateUser = UserRepository.SelectUserByUsername(winnerUuid);
+            updateUser.Coins += 5;
+            return !UserRepository.UpdateUser(updateUser)
+                ? ResponseTypes.CustomError("Something went wrong", 403)
+                : ResponseTypes.CustomResponse(content, 200, "text/plain");
         }
 
         private void SwitchCardFromDeck(Card card, Deck winDeck, Deck looseDeck)
@@ -118,16 +158,18 @@ namespace mtcg.classes.game.model
             return round;
         }
 
-        private Round BattleOnlyDamage(Card card1, Card card2)
+        private Round BattleOnlyDamage(Card card1, Card card2, Card originalCard1 = null, Card originalCard2 = null)
         {
+            originalCard1 ??= card1;
+            originalCard2 ??= card2;
             var round = new Round();
             //card1 is attacker
             if (Math.Abs(card1.Damage - card2.Damage) < 0.1)
             {
                 round.Winner = User2.Username;
                 round.Looser = User1.Username;
-                round.WinningCard = card2;
-                round.LoosingCard = card1;
+                round.WinningCard = originalCard2;
+                round.LoosingCard = originalCard1;
                 round.WinningDeck = Deck2;
                 round.LoosingDeck = Deck1;
             }
@@ -136,8 +178,8 @@ namespace mtcg.classes.game.model
             {
                 round.Winner = User1.Username;
                 round.Looser = User2.Username;
-                round.WinningCard = card1;
-                round.LoosingCard = card2;
+                round.WinningCard = originalCard1;
+                round.LoosingCard = originalCard2;
                 round.WinningDeck = Deck1;
                 round.LoosingDeck = Deck2;
             }
@@ -145,8 +187,8 @@ namespace mtcg.classes.game.model
             {
                 round.Winner = User2.Username;
                 round.Looser = User1.Username;
-                round.WinningCard = card2;
-                round.LoosingCard = card1;
+                round.WinningCard = originalCard2;
+                round.LoosingCard = originalCard1;
                 round.WinningDeck = Deck2;
                 round.LoosingDeck = Deck1;
             }
@@ -223,7 +265,7 @@ namespace mtcg.classes.game.model
                 round.LoosingDeck = Deck2;
             }
 
-            if (card1.GetType() == typeof(SpellCard) && card2.GetType() == typeof(Kraken))
+            if (card1 is SpellCard && card2.GetType() == typeof(Kraken))
             {
                 round.Winner = User2.Username;
                 round.Looser = User1.Username;
@@ -255,40 +297,34 @@ namespace mtcg.classes.game.model
                 Damage = card2.Damage
             };
             var round = new Round();
-            if (card1.ElementType == card2.ElementType) return BattleOnlyDamage(c1, c2);
+            if (card1.ElementType == card2.ElementType) return BattleOnlyDamage(card1, card2);
 
             switch (card1.ElementType)
             {
                 //Water vs Fire
                 case ElementType.Water when card2.ElementType == ElementType.Fire:
-                    Console.WriteLine("effective!");
                     c1.Damage *= 2;
-                    return BattleOnlyDamage(c1, c2);
+                    return BattleOnlyDamage(c1, c2, card1, card2);
                 //Water vs Normal
                 case ElementType.Water when card2.ElementType == ElementType.Normal:
-                    Console.WriteLine("not effective!");
                     c1.Damage /= 2;
-                    return BattleOnlyDamage(c1, c2);
+                    return BattleOnlyDamage(c1, c2, card1, card2);
                 //Fire vs Normal
                 case ElementType.Fire when card2.ElementType == ElementType.Normal:
-                    Console.WriteLine("effective!");
                     c1.Damage *= 2;
-                    return BattleOnlyDamage(c1, c2);
+                    return BattleOnlyDamage(c1, c2, card1, card2);
                 //Fire vs Water
                 case ElementType.Fire when card2.ElementType == ElementType.Water:
-                    Console.WriteLine("not effective!");
                     c1.Damage /= 2;
-                    return BattleOnlyDamage(c1, c2);
+                    return BattleOnlyDamage(c1, c2, card1, card2);
                 //Normal vs Water
                 case ElementType.Normal when card2.ElementType == ElementType.Water:
-                    Console.WriteLine("effective!");
                     c1.Damage *= 2;
-                    return BattleOnlyDamage(c1, c2);
+                    return BattleOnlyDamage(c1, c2, card1, card2);
                 //Normal vs Fire
                 case ElementType.Normal when card2.ElementType == ElementType.Fire:
-                    Console.WriteLine("not effective!");
                     c1.Damage /= 2;
-                    return BattleOnlyDamage(c1, c2);
+                    return BattleOnlyDamage(c1, c2, card1, card2);
             }
 
             return round;

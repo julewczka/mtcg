@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using mtcg.classes.entities;
 using mtcg.classes.game.model;
+using mtcg.classes.game.types.monster;
+using mtcg.classes.game.types.spell;
 using mtcg.repositories;
 
 namespace mtcg.controller
@@ -15,7 +17,7 @@ namespace mtcg.controller
         {
             var user = UserRepository.SelectUserByToken(token);
             if(BattleList.Count < 2) BattleList.Add(user);
-            
+
             if (BattleList.Count == 2)
             {
                 var player1 = BattleList[0];

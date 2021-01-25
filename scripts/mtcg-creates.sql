@@ -1,5 +1,6 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+DROP TABLE stats;
 DROP TABLE trading;
 DROP TABLE pack_cards;
 DROP TABLE deck_cards;
@@ -92,4 +93,14 @@ CREATE TABLE trading (
     min_damage FLOAT NOT NULL,
     
     FOREIGN KEY (card_uuid) REFERENCES card(uuid)
+);
+
+CREATE TABLE stats(
+    stats_uuid UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_uuid UUID NOT NULL,
+    wins INT,
+    losses INT,
+    elo INT DEFAULT 100,
+    
+    FOREIGN KEY (user_uuid) REFERENCES "user"(uuid)
 )

@@ -9,7 +9,6 @@ namespace mtcg.controller
 {
     public static class StackController
     {
-        //TODO: Lock Card for Trade 
         private static readonly List<Card> LockList = new();
 
         public static Response Get(string token)

@@ -71,10 +71,8 @@ namespace mtcg.controller
                 "deck" => DeckController.GetDeckByToken(token),
                 "cards" => CardController.Get(token),
                 "tradings" => TradingController.Get(resource),
-                "transaction" => throw new NotImplementedException(),
-                "stats" => throw new NotImplementedException(),
-                "score" => throw new NotImplementedException(),
-                "battles" => throw new NotImplementedException(),
+                "stats" => StatsController.Get(token),
+                "score" => ScoreController.GetScore(),
                 _ => ResponseTypes.NotFoundRequest
             };
         }
@@ -97,8 +95,6 @@ namespace mtcg.controller
                 "tradings" => TradingController.Post(token, resource, payload),
                 "transactions" => TransactionController.StartTransaction(resource[1], token),
                 "battles" => BattleController.Post(token),
-                "stats" => throw new NotImplementedException(),
-                "score" => throw new NotImplementedException(),
                 "cards" => ResponseTypes.MethodNotAllowed, //CardController.Post(payload),
                 "/" => ResponseTypes.MethodNotAllowed,
                 _ => ResponseTypes.NotFoundRequest
@@ -153,11 +149,8 @@ namespace mtcg.controller
                         JsonSerializer.Deserialize<Card>(json);
                         break;
                     case "tradings":
-                        //TODO: doesn't work for /tradings/deal-id
-                        //JsonSerializer.Deserialize<Trading>(json);
+                        JsonSerializer.Deserialize<Trading>(json);
                         break;
-                    case "transactions":
-                        return true;
                 }
             }
             catch (JsonException)

@@ -93,8 +93,6 @@ namespace mtcg.repositories
                 return false;
             }
         }
-
-        //TODO: Lock card for deck
         public static bool StartToTrade(string tradingUuid, string cardUuid, string token)
         {
             //TODO: transactions verwenden

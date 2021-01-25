@@ -200,7 +200,6 @@ namespace mtcg.repositories
                 query.Parameters.AddWithValue("name", user.Name);
                 query.Parameters.AddWithValue("bio", user.Bio);
                 query.Parameters.AddWithValue("image", user.Image);
-                //TODO: Convert data-table from int to double
                 query.Parameters.AddWithValue("coins", user.Coins);
                 connection.Open();
                 updateCount = query.ExecuteNonQuery();

@@ -9,6 +9,8 @@ namespace mtcg.controller
 {
     public static class TradingController
     {
+        private static readonly object TradingLock = new();
+
         public static Response Get(IReadOnlyList<string> resource)
         {
             var content = new StringBuilder();
@@ -56,17 +58,26 @@ namespace mtcg.controller
                     var validate = ValidateRequestedDeal(token, offeredCard, stack);
                     if (validate != null) return validate;
 
-                    if (!TradingRepository.InsertTradingDeal(trading)) return ResponseTypes.BadRequest;
-                    StackController.AddToLockList(offeredCard);
+                    lock (TradingLock)
+                    {
+                        if (!TradingRepository.InsertTradingDeal(trading)) return ResponseTypes.BadRequest;
+                        StackController.AddToLockList(offeredCard);
+                    }
+
                     break;
                 case 2:
                     var cleanPayload = payload.Replace("\"", string.Empty);
                     var validateTrade = ValidateTrade(resource[1], cleanPayload, token);
                     if (validateTrade != null) return validateTrade;
-                    if (!TradingRepository.StartToTrade(resource[1], cleanPayload, token))
-                        return ResponseTypes.BadRequest;
-                    var cardToTrade = CardRepository.SelectCardByUuid(cleanPayload);
-                    StackController.RemoveFromLockList(cardToTrade);
+                    
+                    lock (TradingLock)
+                    {
+                        if (!TradingRepository.StartToTrade(resource[1], cleanPayload, token))
+                            return ResponseTypes.BadRequest;
+                        var cardToTrade = CardRepository.SelectCardByUuid(cleanPayload);
+                        StackController.RemoveFromLockList(cardToTrade);
+                    }
+                    
                     break;
                 default:
                     return ResponseTypes.BadRequest;
@@ -102,18 +113,18 @@ namespace mtcg.controller
             if (newOwner?.Id == null) return ResponseTypes.Unauthorized;
             if (trading.Trader.Equals(newOwner.Id, StringComparison.CurrentCultureIgnoreCase))
                 return ResponseTypes.BadRequest;
-            
+
             //check if buyer has a stack
             var newOwnerStack = StackRepository.GetStackByUserId(newOwner.Id);
             if (newOwnerStack?.Uuid == null) return ResponseTypes.CustomError("Buyer has no stack", 404);
-            
+
             //check if Card is in stack, deck or package
             if (!StackRepository.IsCardInStack(cardUuid, newOwnerStack.Uuid))
                 return ResponseTypes.CustomError("Card must be in stack", 403);
             if (PackageRepository.IsCardInPackages(cardUuid))
                 return ResponseTypes.CustomError("Card mustn't be in package", 403);
             if (DeckRepository.IsCardInDeck(cardUuid)) return ResponseTypes.CustomError("Card mustn't be in deck", 403);
-            
+
             //check if offered card meets requirements
             if (!trading.CardType.Equals(card.CardType, StringComparison.CurrentCultureIgnoreCase))
                 return

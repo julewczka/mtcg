@@ -134,7 +134,10 @@ namespace mtcg.repositories
 
         public static bool DeleteCardFromStackByCardUuid(string stackUuid, string cardUuid)
         {
+            //TODO: connection nach außen schieben
+            //commit & rollback
             using var connection = new NpgsqlConnection(ConnectionString.Credentials);
+            //var transaction = connection.BeginTransaction();
             using var query =
                 new NpgsqlCommand("delete from stack_cards where stack_uuid::text = @stack_uuid and card_uuid::text = @card_uuid", connection);
             query.Parameters.AddWithValue("stack_uuid", stackUuid);

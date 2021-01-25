@@ -18,6 +18,7 @@ namespace mtcg.classes.entities
                     Cards.Remove(c);
                 }
             });
+
         }
 
         public void AddCardToDeck(Card card)

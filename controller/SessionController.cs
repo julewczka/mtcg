@@ -10,6 +10,8 @@ namespace mtcg.controller
 {
     public static class SessionController
     {
+        private static readonly object SessionLock = new object();
+
         /**
          * List for every logged-in user
          */
@@ -21,23 +23,25 @@ namespace mtcg.controller
          */
         public static Response Login(string payload)
         {
-            var loginUser = JsonSerializer.Deserialize<User>(payload);
-            var timestamp = DateTime.Now;
+            lock (SessionLock)
+            {
+                var loginUser = JsonSerializer.Deserialize<User>(payload);
+                var timestamp = DateTime.Now;
 
-            if (string.IsNullOrEmpty(loginUser?.Username)) return ResponseTypes.Unauthorized;
+                if (string.IsNullOrEmpty(loginUser?.Username)) return ResponseTypes.Unauthorized;
 
-            if (CheckSessionList(loginUser.Username)) return ResponseTypes.MethodNotAllowed;
+                if (CheckSessionList(loginUser.Username)) return ResponseTypes.MethodNotAllowed;
 
-            var retrievedUser = SessionRepository.GetUserByName(loginUser.Username);
-            if (retrievedUser == null || loginUser.Password != retrievedUser.Password)
-                return ResponseTypes.Unauthorized;
+                var retrievedUser = SessionRepository.GetUserByName(loginUser.Username);
+                if (retrievedUser == null || loginUser.Password != retrievedUser.Password)
+                    return ResponseTypes.Unauthorized;
 
-            loginUser.Password = string.Empty;
-            retrievedUser.Password = string.Empty;
+                loginUser.Password = string.Empty;
+                retrievedUser.Password = string.Empty;
 
-            SessionList.Add(loginUser.Username, timestamp);
-            SessionRepository.LogLogin(loginUser.Username, timestamp);
-
+                SessionList.Add(loginUser.Username, timestamp);
+                SessionRepository.LogLogin(loginUser.Username, timestamp);
+            }
             return ResponseTypes.CustomResponse("Authenticated", 200, "text/plain");
         }
 
@@ -80,6 +84,5 @@ namespace mtcg.controller
             CleanSessionList();
             return SessionList.ContainsKey(name);
         }
-        
     }
 }

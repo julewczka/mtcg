@@ -57,6 +57,7 @@ namespace mtcg.controller
                     if (validate != null) return validate;
 
                     if (!TradingRepository.InsertTradingDeal(trading)) return ResponseTypes.BadRequest;
+                    StackController.AddToLockList(offeredCard);
                     break;
                 case 2:
                     var cleanPayload = payload.Replace("\"", string.Empty);
@@ -64,6 +65,8 @@ namespace mtcg.controller
                     if (validateTrade != null) return validateTrade;
                     if (!TradingRepository.StartToTrade(resource[1], cleanPayload, token))
                         return ResponseTypes.BadRequest;
+                    var cardToTrade = CardRepository.SelectCardByUuid(cleanPayload);
+                    StackController.RemoveFromLockList(cardToTrade);
                     break;
                 default:
                     return ResponseTypes.BadRequest;

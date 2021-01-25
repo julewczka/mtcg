@@ -9,6 +9,7 @@ namespace mtcg.controller
 {
     public static class StackController
     {
+        //TODO: Lock Card for Trade 
         private static readonly List<Card> LockList = new();
 
         public static Response Get(string token)
@@ -29,6 +30,23 @@ namespace mtcg.controller
         public static bool IsLocked(Card card)
         {
             return LockList.Contains(card);
+        }
+
+        public static void AddToLockList(Card card)
+        {
+            LockList.Add(card);
+        }
+
+        public static void RemoveFromLockList(Card card)
+        {
+            var newList = new List<Card>(LockList);
+            newList.ForEach(c =>
+            {
+                if (c.Uuid == card.Uuid)
+                {
+                    LockList.Remove(c);
+                }
+            });
         }
     }
 }

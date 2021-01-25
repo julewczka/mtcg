@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using mtcg.classes.entities;
 using mtcg.classes.game.model;
@@ -8,6 +9,7 @@ namespace mtcg.controller
     public static class BattleController
     {
         private static readonly List<User> BattleList = new();
+        private static readonly object BattleLock = new();
 
         public static Response Post(string token)
         {
@@ -18,12 +20,14 @@ namespace mtcg.controller
             {
                 var player1 = BattleList[0];
                 var player2 = BattleList[1];
-                var battle = new Battle(player1, player2);
-                
                 BattleList.Clear();
-                
+                var battle = new Battle(player1, player2);
+                lock (BattleLock)
+                {
+                   return battle.StartBattle();
+                }
             }
-            return ResponseTypes.HttpOk;
+            return ResponseTypes.CustomResponse("waiting...", 200, "text/plain");
         }
     }
 }

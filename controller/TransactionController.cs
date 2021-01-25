@@ -4,6 +4,7 @@ namespace mtcg.controller
 {
     public static class TransactionController
     {
+        private static readonly object TransactionLock = new object();
 
         public static Response StartTransaction(string resource, string token)
         {
@@ -13,12 +14,14 @@ namespace mtcg.controller
                 _ => ResponseTypes.NotFoundRequest
             };
         }
-        
+
         private static Response BuyPackage(string token)
         {
-            var user = UserRepository.SelectUserByToken(token);
-            return user?.Id == null ? ResponseTypes.Unauthorized : StackRepository.BuyPackage(user.Id);
-            
+            lock (TransactionLock)
+            {
+                var user = UserRepository.SelectUserByToken(token);
+                return user?.Id == null ? ResponseTypes.Unauthorized : StackRepository.BuyPackage(user.Id);
+            }
         }
     }
 }

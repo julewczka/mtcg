@@ -55,6 +55,14 @@ namespace mtcg.controller
 
             var cardUuidsAsArray = removeBrackets.Split(", ");
             if (cardUuidsAsArray.Length < 4) return ResponseTypes.CustomError("you must insert 4 id's", 400);
+
+            foreach (var cardUuid in cardUuidsAsArray)
+            {
+                var card = CardRepository.SelectCardByUuid(cardUuid);
+                if (card?.Uuid == null) return ResponseTypes.Forbidden;
+
+                if (StackController.IsLocked(card)) return ResponseTypes.CustomError($"{card.Uuid} is locked!", 403);
+            }
             
             var deck = DeckRepository.ConfigureDeck(token, cardUuidsAsArray);
             if (deck == null) return ResponseTypes.NotFoundRequest;

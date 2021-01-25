@@ -31,5 +31,10 @@ namespace mtcg.controller
             }
             return ResponseTypes.CustomResponse("waiting...", 200, "text/plain");
         }
+
+        public static List<User> GetBattleList()
+        {
+            return BattleList;
+        }
     }
 }

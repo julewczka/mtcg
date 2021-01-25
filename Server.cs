@@ -50,7 +50,7 @@ namespace mtcg
             while (!sr.EndOfStream)
             {
                 var line = sr.ReadLine();
-                
+
                 if (line != null && line.Contains("Content-Length"))
                 {
                     var trimLine = line.Replace(" ", "").Split(":");
@@ -65,8 +65,17 @@ namespace mtcg
             var content = ReadRequestContent(sr, contentSize);
             rawRequest.Append(content);
             var request = new Request(rawRequest.ToString(), contentSize);
-            var response = RequestController.HandleRequest(request, content.ToString());
-            response.Send(stream);
+            if (request.IsValid)
+            {
+                var response = RequestController.HandleRequest(request, content.ToString());
+                response.Send(stream);
+            }
+            else
+            {
+                var response = ResponseTypes.BadRequest;
+                response.Send(stream);
+            }
+
             socket.Close();
         }
 
@@ -79,6 +88,5 @@ namespace mtcg
             Array.ForEach(lines, line => content.Append(line));
             return content;
         }
-        
     }
 }

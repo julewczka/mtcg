@@ -21,10 +21,11 @@ namespace mtcg.classes.game.model
         private Stats Stats1 { get; set; }
         private Stats Stats2 { get; set; }
         private readonly StringBuilder _battleLog = new();
-
-        //TODO: Error-Handling if deck does not exist
+        
         public Battle(User player1, User player2)
         {
+            if (player1?.Id == null || player2?.Id == null) return;
+            
             var nl = Environment.NewLine;
             ChooseStarter(player1, player2);
             _battleLog.Append($"Starter: {User1.Username}{nl}");
@@ -49,6 +50,10 @@ namespace mtcg.classes.game.model
         {
             var nl = Environment.NewLine;
             var content = new StringBuilder(_battleLog + nl);
+
+            if (Deck1?.Cards == null) return ResponseTypes.Forbidden;
+            if (Deck2?.Cards == null) return ResponseTypes.Forbidden;
+
             content.Append("Start battle:" + nl);
 
             for (var i = 1; i <= Rounds; i++)
@@ -146,7 +151,7 @@ namespace mtcg.classes.game.model
             }
         }
 
-        private Round CalcBattle(Card card1, Card card2)
+        public Round CalcBattle(Card card1, Card card2)
         {
             var round = SpecialConditions(card1, card2);
             if (round.Winner != null) return round;
@@ -223,7 +228,7 @@ namespace mtcg.classes.game.model
 
             //Dragon vs FireElves
             if (card1.GetType() == typeof(Dragon) &&
-                (card2.GetType() == typeof(Elve) && card1.ElementType == ElementType.Fire))
+                (card2.GetType() == typeof(Elve) && card2.ElementType == ElementType.Fire))
             {
                 round.Winner = User2.Username;
                 round.Looser = User1.Username;

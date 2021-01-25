@@ -11,6 +11,7 @@ namespace mtcg
     {
         private int _statusCode;
         private string _content = string.Empty;
+        private string _contentType = string.Empty;
 
         public Response()
         {
@@ -24,12 +25,12 @@ namespace mtcg
         }
 
         public IDictionary<string, string> Headers { get; }
-        public int ContentLength => int.Parse(Headers["content-length"]);
+        public int ContentLength => Headers["content-length"] == null ? 0 : int.Parse(Headers["content-length"]);
 
         public string ContentType
         {
-            get => Headers["content-type"] ?? "";
-            set { }
+            get => string.IsNullOrEmpty(_contentType) ? "text/plain" : _contentType;
+            set { value ??= "text/plain"; } 
         }
 
         public int StatusCode
@@ -94,6 +95,7 @@ namespace mtcg
 
         public void Send(Stream network) 
         {
+            AddHeader("content-type", ContentType);
             var wr = new StreamWriter(network);
             var response = new StringBuilder();
             response.Append($"HTTP/1.1 {Status}{Environment.NewLine}");

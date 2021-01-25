@@ -1,14 +1,13 @@
 using System;
 using System.Collections.Generic;
 using mtcg.classes.entities;
+using mtcg.types;
 using Npgsql;
 
 namespace mtcg.repositories
 {
     public static class SessionRepository
     {
-        private const string Credentials =
-            "Server=127.0.0.1;Port=5432;Database=mtcg-db;User Id=mtcg-user;Password=mtcg-pw";
 
         /**
          * Get all records of the db-table "logins"
@@ -19,7 +18,7 @@ namespace mtcg.repositories
             var retrievedLogs = new List<Session>();
             try
             {
-                using (var connection = new NpgsqlConnection(Credentials))
+                using (var connection = new NpgsqlConnection(ConnectionString.Credentials))
                 {
                     connection.Open();
                     using var query = new NpgsqlCommand("select * from logins", connection);
@@ -51,7 +50,7 @@ namespace mtcg.repositories
         {
             try
             {
-                using (var connection = new NpgsqlConnection(Credentials))
+                using (var connection = new NpgsqlConnection(ConnectionString.Credentials))
                 {
                     using var query =
                         new NpgsqlCommand("insert into logins(username, timestamp) values (@username, @timestamp)",
@@ -76,7 +75,7 @@ namespace mtcg.repositories
             var user = new User();
             try
             {
-                using (var connection = new NpgsqlConnection(Credentials))
+                using (var connection = new NpgsqlConnection(ConnectionString.Credentials))
                 {
                     using var query = new NpgsqlCommand("select username, password from \"user\" where username = @p",
                         connection);

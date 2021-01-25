@@ -2,14 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using mtcg.classes.entities;
+using mtcg.types;
 using Npgsql;
 
 namespace mtcg.repositories
 {
     public static class PackageRepository
     {
-        private const string Credentials =
-            "Server=127.0.0.1;Port=5432;Database=mtcg-db;User Id=mtcg-user;Password=mtcg-pw";
 
         public static Package SellPackage()
         {
@@ -19,7 +18,7 @@ namespace mtcg.repositories
         public static List<Package> GetAllPackages()
         {
             var packages = new List<Package>();
-            using var connection = new NpgsqlConnection(Credentials);
+            using var connection = new NpgsqlConnection(ConnectionString.Credentials);
             using var query = new NpgsqlCommand("select * from packages", connection);
             connection.Open();
             try
@@ -46,7 +45,7 @@ namespace mtcg.repositories
         public static bool DeletePackage(string packUuid)
         {
             if (!DestroyPackRelation(packUuid)) return false;
-            using var connection = new NpgsqlConnection(Credentials);
+            using var connection = new NpgsqlConnection(ConnectionString.Credentials);
             using var query = new NpgsqlCommand("delete from packages where uuid::text = @uuid",connection);
             query.Parameters.AddWithValue("uuid", packUuid);
             connection.Open();
@@ -62,7 +61,7 @@ namespace mtcg.repositories
 
         public static bool IsCardInPackages(string cardUuid)
         {
-            using var connection = new NpgsqlConnection(Credentials);
+            using var connection = new NpgsqlConnection(ConnectionString.Credentials);
             using var query =
                 new NpgsqlCommand(
                     "select * from pack_cards where card_uuid::text = @card_uuid",
@@ -83,7 +82,7 @@ namespace mtcg.repositories
 
         private static bool DestroyPackRelation(string packUuid)
         {
-            using var connection = new NpgsqlConnection(Credentials);
+            using var connection = new NpgsqlConnection(ConnectionString.Credentials);
             using var query = new NpgsqlCommand("delete from pack_cards where pack_uuid::text = @pack_uuid",connection);
             query.Parameters.AddWithValue("pack_uuid", packUuid);
             connection.Open();
@@ -100,7 +99,7 @@ namespace mtcg.repositories
         private static List<Card> GetCardsFromPack(string uuid)
         {
             var cards = new List<Card>();
-            using var connection = new NpgsqlConnection(Credentials);
+            using var connection = new NpgsqlConnection(ConnectionString.Credentials);
             using var query =
                 new NpgsqlCommand(
                     "select * from card join pack_cards pc on card.uuid = pc.card_uuid where pack_uuid::text = @uuid",
@@ -147,7 +146,7 @@ namespace mtcg.repositories
         private static string AddPackage()
         {
             var uuid = "";
-            using var connection = new NpgsqlConnection(Credentials);
+            using var connection = new NpgsqlConnection(ConnectionString.Credentials);
             using var query = new NpgsqlCommand("insert into packages default values returning uuid", connection);
             try
             {
@@ -170,7 +169,7 @@ namespace mtcg.repositories
         {
             if (string.IsNullOrEmpty(cardUuid)) return false;
 
-            using var connection = new NpgsqlConnection(Credentials);
+            using var connection = new NpgsqlConnection(ConnectionString.Credentials);
             using var query =
                 new NpgsqlCommand("insert into pack_cards(pack_uuid, card_uuid) values (@pack_uuid, @card_uuid)",
                     connection);

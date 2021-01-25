@@ -1,15 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using mtcg.classes.entities;
+using mtcg.types;
 using Npgsql;
 
 namespace mtcg.repositories
 {
     public static class UserRepository
     {
-        private const string Credentials =
-            "Server=127.0.0.1;Port=5432;Database=mtcg-db;User Id=mtcg-user;Password=mtcg-pw";
-
         /**
          * Get all users
          * returns a list of users
@@ -20,7 +18,7 @@ namespace mtcg.repositories
 
             try
             {
-                using var connection = new NpgsqlConnection(Credentials);
+                using var connection = new NpgsqlConnection(ConnectionString.Credentials);
                 using var query = new NpgsqlCommand("select * from \"user\"", connection);
                 connection.Open();
 
@@ -57,7 +55,7 @@ namespace mtcg.repositories
             var user = new User();
             try
             {
-                using var connection = new NpgsqlConnection(Credentials);
+                using var connection = new NpgsqlConnection(ConnectionString.Credentials);
                 using var query = new NpgsqlCommand("select * from \"user\" where username = @p", connection);
                 query.Parameters.AddWithValue("p", username);
                 connection.Open();
@@ -90,7 +88,7 @@ namespace mtcg.repositories
             
             try
             {
-                using (var connection = new NpgsqlConnection(Credentials))
+                using (var connection = new NpgsqlConnection(ConnectionString.Credentials))
                 {
                     using var query = new NpgsqlCommand("select * from \"user\" where uuid::text = @uuid", connection);
                     query.Parameters.AddWithValue("uuid", uuid);
@@ -124,7 +122,7 @@ namespace mtcg.repositories
             var user = new User();
             try
             {
-                using (var connection = new NpgsqlConnection(Credentials))
+                using (var connection = new NpgsqlConnection(ConnectionString.Credentials))
                 {
                     using var query = new NpgsqlCommand("select * from \"user\" where token = @token", connection);
                     query.Parameters.AddWithValue("token", token);
@@ -159,7 +157,7 @@ namespace mtcg.repositories
             var success = false;
             try
             {
-                using (var connection = new NpgsqlConnection(Credentials))
+                using (var connection = new NpgsqlConnection(ConnectionString.Credentials))
                 {
                     var insertCount = 0;
                     using var query =
@@ -190,7 +188,7 @@ namespace mtcg.repositories
         public static bool UpdateUser(User user)
         {
             var success = false;
-            using var connection = new NpgsqlConnection(Credentials);
+            using var connection = new NpgsqlConnection(ConnectionString.Credentials);
             try
             {
                 var updateCount = 0;
@@ -221,7 +219,7 @@ namespace mtcg.repositories
          */
         public static bool DeleteUser(string uuid)
         {
-            using var connection = new NpgsqlConnection(Credentials);
+            using var connection = new NpgsqlConnection(ConnectionString.Credentials);
             try
             {
                 using var query = new NpgsqlCommand("delete from \"user\" where uuid::text = @uuid", connection);

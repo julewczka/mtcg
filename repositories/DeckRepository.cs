@@ -2,19 +2,18 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using mtcg.classes.entities;
+using mtcg.types;
 using Npgsql;
 
 namespace mtcg.repositories
 {
     public static class DeckRepository
     {
-        private const string Credentials =
-            "Server=127.0.0.1;Port=5432;Database=mtcg-db;User Id=mtcg-user;Password=mtcg-pw";
 
         public static Deck GetDeckByUserUuid(string userUuid)
         {
             var deck = new Deck();
-            using var connection = new NpgsqlConnection(Credentials);
+            using var connection = new NpgsqlConnection(ConnectionString.Credentials);
             using var query = new NpgsqlCommand("select * from deck where user_uuid::text = @user_uuid", connection);
             query.Parameters.AddWithValue("user_uuid", userUuid);
             connection.Open();
@@ -68,7 +67,7 @@ namespace mtcg.repositories
         {
             if (string.IsNullOrEmpty(cardUuid)) return false;
 
-            using var connection = new NpgsqlConnection(Credentials);
+            using var connection = new NpgsqlConnection(ConnectionString.Credentials);
             using var query =
                 new NpgsqlCommand("insert into deck_cards(deck_uuid, card_uuid) values (@deck_uuid, @card_uuid)",
                     connection);
@@ -93,7 +92,7 @@ namespace mtcg.repositories
         private static Deck AddDeck(string userUuid)
         {
             var deck = new Deck();
-            using var connection = new NpgsqlConnection(Credentials);
+            using var connection = new NpgsqlConnection(ConnectionString.Credentials);
             using var query = new NpgsqlCommand("insert into deck(user_uuid) values(@uuid) returning uuid", connection);
             query.Parameters.AddWithValue("uuid", Guid.Parse(userUuid));
             try
@@ -118,7 +117,7 @@ namespace mtcg.repositories
 
         private static bool ClearDeckCards(string deckUuid)
         {
-            using var connection = new NpgsqlConnection(Credentials);
+            using var connection = new NpgsqlConnection(ConnectionString.Credentials);
             using var query =
                 new NpgsqlCommand("delete from deck_cards where deck_uuid::text = @deck_uuid", connection);
             query.Parameters.AddWithValue("deck_uuid", deckUuid);
@@ -138,7 +137,7 @@ namespace mtcg.repositories
         public static List<Card> GetCardsFromDeck(string deckUuid)
         {
             var cards = new List<Card>();
-            using var connection = new NpgsqlConnection(Credentials);
+            using var connection = new NpgsqlConnection(ConnectionString.Credentials);
             using var query =
                 new NpgsqlCommand(
                     "select * from card join deck_cards dc on card.uuid = dc.card_uuid where deck_uuid::text = @deck_uuid",
@@ -174,7 +173,7 @@ namespace mtcg.repositories
 
         public static bool IsCardInDeck(string cardUuid)
         {
-            using var connection = new NpgsqlConnection(Credentials);
+            using var connection = new NpgsqlConnection(ConnectionString.Credentials);
             using var query = new NpgsqlCommand("select * from deck_cards where card_uuid::text = @card_uuid",connection);
             query.Parameters.AddWithValue("card_uuid", cardUuid);
             connection.Open();

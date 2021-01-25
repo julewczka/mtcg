@@ -1,19 +1,18 @@
 using System;
 using System.Collections.Generic;
 using mtcg.classes.entities;
+using mtcg.types;
 using Npgsql;
 
 namespace mtcg.repositories
 {
     public static class TradingRepository
     {
-        private const string Credentials =
-            "Server=127.0.0.1;Port=5432;Database=mtcg-db;User Id=mtcg-user;Password=mtcg-pw";
 
         public static List<Trading> GetAllDeals()
         {
             var tradings = new List<Trading>();
-            using var connection = new NpgsqlConnection(Credentials);
+            using var connection = new NpgsqlConnection(ConnectionString.Credentials);
             using var query = new NpgsqlCommand("select * from trading", connection);
             connection.Open();
             try
@@ -45,7 +44,7 @@ namespace mtcg.repositories
         public static Trading GetDealByUuid(string uuid)
         {
             var trading = new Trading();
-            using var connection = new NpgsqlConnection(Credentials);
+            using var connection = new NpgsqlConnection(ConnectionString.Credentials);
             using var query = new NpgsqlCommand("select * from trading where uuid::text = @uuid", connection);
             query.Parameters.AddWithValue("uuid", uuid);
             connection.Open();
@@ -72,7 +71,7 @@ namespace mtcg.repositories
 
         public static bool InsertTradingDeal(Trading trading)
         {
-            using var connection = new NpgsqlConnection(Credentials);
+            using var connection = new NpgsqlConnection(ConnectionString.Credentials);
             using var query =
                 new NpgsqlCommand(
                     "insert into trading(uuid, card_uuid, user_uuid, card_type, min_damage) values (@uuid, @card_uuid, @user_uuid, @card_type, @min_damage)",
@@ -95,6 +94,7 @@ namespace mtcg.repositories
             }
         }
 
+        //TODO: Lock card for deck
         public static bool StartToTrade(string tradingUuid, string cardUuid, string token)
         {
             //TODO: transactions verwenden
@@ -116,7 +116,7 @@ namespace mtcg.repositories
 
         public static bool DeleteTrading(string tradingUuid)
         {
-            using var connection = new NpgsqlConnection(Credentials);
+            using var connection = new NpgsqlConnection(ConnectionString.Credentials);
             using var query =
                 new NpgsqlCommand("delete from trading where uuid::text = @uuid", connection);
             query.Parameters.AddWithValue("uuid", tradingUuid);
@@ -137,7 +137,7 @@ namespace mtcg.repositories
         private static bool SwitchCardOwner(string userUuid, string cardUuid)
         {
             var userStack = StackRepository.GetStackByUserId(userUuid);
-            using var connection = new NpgsqlConnection(Credentials);
+            using var connection = new NpgsqlConnection(ConnectionString.Credentials);
             using var query =
                 new NpgsqlCommand("insert into stack_cards(stack_uuid, card_uuid) values (@stack_uuid, @card_uuid)",
                     connection);

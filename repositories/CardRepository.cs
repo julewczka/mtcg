@@ -1,21 +1,20 @@
 using System;
 using System.Collections.Generic;
 using mtcg.classes.entities;
+using mtcg.types;
 using Npgsql;
 
 namespace mtcg.repositories
 {
     public static class CardRepository
     {
-        private const string Credentials =
-            "Server=127.0.0.1;Port=5432;Database=mtcg-db;User Id=mtcg-user;Password=mtcg-pw";
 
         public static IEnumerable<Card> SelectAll()
         {
             var retrievedCards = new List<Card>();
             try
             {
-                using (var connection = new NpgsqlConnection(Credentials))
+                using (var connection = new NpgsqlConnection(ConnectionString.Credentials))
                 {
                     using var query = new NpgsqlCommand("select * from card", connection);
                     connection.Open();
@@ -46,7 +45,7 @@ namespace mtcg.repositories
         public static Card SelectCardByUuid(string uuid)
         {
             var card = new Card();
-            using var connection = new NpgsqlConnection(Credentials);
+            using var connection = new NpgsqlConnection(ConnectionString.Credentials);
             using var query = new NpgsqlCommand("select * from card where uuid::text = @uuid", connection);
             query.Parameters.AddWithValue("uuid", uuid);
             connection.Open();
@@ -76,7 +75,7 @@ namespace mtcg.repositories
         {
             try
             {
-                using (var connection = new NpgsqlConnection(Credentials))
+                using (var connection = new NpgsqlConnection(ConnectionString.Credentials))
                 {
                     connection.Open();
                     connection.TypeMapper.MapEnum<ElementType>("element_type");
@@ -102,7 +101,7 @@ namespace mtcg.repositories
         {
             try
             {
-                using (var connection = new NpgsqlConnection(Credentials))
+                using (var connection = new NpgsqlConnection(ConnectionString.Credentials))
                 {
                     connection.Open();
                     connection.TypeMapper.MapEnum<ElementType>("element_type");
@@ -126,7 +125,7 @@ namespace mtcg.repositories
 
         public static bool DeleteCard(string uuid)
         {
-            using var connection = new NpgsqlConnection(Credentials);
+            using var connection = new NpgsqlConnection(ConnectionString.Credentials);
             try
             {
                 using var query = new NpgsqlCommand("delete from card where uuid::text = @uuid", connection);

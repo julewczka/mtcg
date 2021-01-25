@@ -3,15 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using mtcg.classes.entities;
 using mtcg.controller;
+using mtcg.types;
 using Npgsql;
 
 namespace mtcg.repositories
 {
     public static class StackRepository
     {
-        private const string Credentials =
-            "Server=127.0.0.1;Port=5432;Database=mtcg-db;User Id=mtcg-user;Password=mtcg-pw";
-
         /// <summary>
         /// Show all acquired cards
         /// </summary>
@@ -70,7 +68,7 @@ namespace mtcg.repositories
         {
             if (string.IsNullOrEmpty(stackUuid)) return false;
 
-            using var connection = new NpgsqlConnection(Credentials);
+            using var connection = new NpgsqlConnection(ConnectionString.Credentials);
             using var query =
                 new NpgsqlCommand("insert into stack_cards(stack_uuid, card_uuid) values(@stack_uuid, @card_uuid)",
                     connection);
@@ -90,7 +88,7 @@ namespace mtcg.repositories
         private static string CreateStack(string userUuid)
         {
             var uuid = "";
-            using var connection = new NpgsqlConnection(Credentials);
+            using var connection = new NpgsqlConnection(ConnectionString.Credentials);
             using var query =
                 new NpgsqlCommand("insert into stack(user_uuid) values(@uuid) returning uuid", connection);
             query.Parameters.AddWithValue("uuid", Guid.Parse(userUuid));
@@ -114,7 +112,7 @@ namespace mtcg.repositories
         public static Stack GetStackByUserId(string uuid)
         {
             var stack = new Stack();
-            using var connection = new NpgsqlConnection(Credentials);
+            using var connection = new NpgsqlConnection(ConnectionString.Credentials);
             using var query = new NpgsqlCommand("select * from stack where user_uuid::text = @uuid", connection);
             query.Parameters.AddWithValue("uuid", uuid);
             connection.Open();
@@ -136,7 +134,7 @@ namespace mtcg.repositories
 
         public static bool DeleteCardFromStackByCardUuid(string stackUuid, string cardUuid)
         {
-            using var connection = new NpgsqlConnection(Credentials);
+            using var connection = new NpgsqlConnection(ConnectionString.Credentials);
             using var query =
                 new NpgsqlCommand("delete from stack_cards where stack_uuid::text = @stack_uuid and card_uuid::text = @card_uuid", connection);
             query.Parameters.AddWithValue("stack_uuid", stackUuid);
@@ -158,7 +156,7 @@ namespace mtcg.repositories
 
         public static bool IsCardInStack(string cardUuid, string stackUuid)
         {
-            using var connection = new NpgsqlConnection(Credentials);
+            using var connection = new NpgsqlConnection(ConnectionString.Credentials);
             using var query =
                 new NpgsqlCommand(
                     "select * from stack_cards where stack_uuid::text = @stack_uuid and card_uuid::text = @card_uuid",
@@ -181,7 +179,7 @@ namespace mtcg.repositories
         private static List<string> GetCardUuidsInStack(string stackUuid)
         {
             var cardUuids = new List<string>();
-            using var connection = new NpgsqlConnection(Credentials);
+            using var connection = new NpgsqlConnection(ConnectionString.Credentials);
             using var query = new NpgsqlCommand("select * from stack_cards where stack_uuid::text = @stack_uuid",
                 connection);
             query.Parameters.AddWithValue("stack_uuid", stackUuid);

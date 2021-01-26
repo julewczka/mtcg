@@ -26,9 +26,9 @@ echo.
 
 REM --------------------------------------------------
 echo 2) Login Users
-curl -X POST http://localhost:10001/sessions --header "Content-Type: application/json" -d "{\"Username\":\"kienboec\", \"Password\":\"daniel\"}"
+curl -X POST http://localhost:12345/sessions --header "Content-Type: application/json" -d "{\"Username\":\"julewczka\", \"Password\":\"eThu)458c3m\"}"
 echo.
-curl -X POST http://localhost:10001/sessions --header "Content-Type: application/json" -d "{\"Username\":\"altenhof\", \"Password\":\"markus\"}"
+curl -X POST http://localhost:12345/sessions --header "Content-Type: application/json" -d "{\"Username\":\"wmattisssen9\", \"Password\":\"kKo5mGMnZ2z\"}"
 echo.
 curl -X POST http://localhost:10001/sessions --header "Content-Type: application/json" -d "{\"Username\":\"admin\",    \"Password\":\"istrator\"}"
 echo.
@@ -197,7 +197,7 @@ REM --------------------------------------------------
 echo 15) stats
 curl -X GET http://localhost:10001/stats --header "Authorization: Basic kienboec-mtcgToken"
 echo.
-curl -X GET http://localhost:10001/stats --header "Authorization: Basic altenhof-mtcgToken"
+curl -X GET http://localhost:10001/stats --header "Authorization: Basic wmattisssen9-mtcgToken"
 echo.
 echo.
 
@@ -209,8 +209,8 @@ echo.
 
 REM --------------------------------------------------
 echo 17) battle
-start /b "kienboec battle" curl -X POST http://localhost:10001/battles --header "Authorization: Basic kienboec-mtcgToken"
-start /b "altenhof battle" curl -X POST http://localhost:10001/battles --header "Authorization: Basic altenhof-mtcgToken"
+curl -X POST http://localhost:12345/battles --header "Authorization: Basic julewczka-mtcgToken" --header "Content-Length: 0"
+curl -X POST http://localhost:12345/battles --header "Authorization: Basic wmattisssen9-mtcgToken" --header "Content-Length: 0"
 ping localhost -n 10 >NUL 2>NUL
 
 REM --------------------------------------------------

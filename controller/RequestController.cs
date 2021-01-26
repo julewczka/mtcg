@@ -19,8 +19,10 @@ namespace mtcg.controller
             if (request.Headers.ContainsKey("authorization"))
             {
                 var authHeader = request.Headers["authorization"];
+                Console.WriteLine($"Test1: {authHeader}");
                 if (authHeader.Length > 5)
                 {
+                    Console.WriteLine($" 2: {authHeader}");
                     token = authHeader.Substring(5);
                 }
             }
@@ -79,12 +81,13 @@ namespace mtcg.controller
 
         private static Response Post(string token, IReadOnlyList<string> resource, string payload)
         {
-            //if (resource[0] != "sessions")
-            //{
-            //    if (!IsUserAuthorized(token)) return ResponseTypes.Unauthorized;
-           // }
+            if (resource[0] != "sessions")
+            {
+                if (!IsUserAuthorized(token))
+                    return ResponseTypes.CustomError($"Fail: {token}", 403); //ResponseTypes.Unauthorized;
+            }
 
-            //if (!IsValidJson(resource[0], payload)) return ResponseTypes.BadRequest;
+            if (!IsValidJson(resource[0], payload)) return ResponseTypes.BadRequest;
             return resource[0] switch
             {
                 "users" => UserController.Post(payload),

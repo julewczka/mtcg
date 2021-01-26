@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using mtcg.classes.entities;
 using mtcg.types;
 using Npgsql;
@@ -33,8 +34,17 @@ namespace mtcg.repositories
                         Token = fetch["token"].ToString(),
                         Bio = fetch["bio"].ToString(),
                         Image = fetch["image"].ToString(),
-                        Coins = double.Parse(fetch["coins"].ToString())
+                        Coins = double.Parse(fetch["coins"].ToString()),
                     };
+
+                    var deck = DeckRepository.GetDeckByUserUuid(currentUser.Id);
+                    if (deck?.Uuid != null)
+                    {
+                        var deckCards = DeckRepository.GetCardsFromDeck(deck.Uuid);
+                        currentUser.Deck.Uuid = deck.Uuid;
+                        currentUser.Deck.Cards = deckCards;
+                    }
+
                     retrievedUsers.Add(currentUser);
                 }
             }
@@ -42,7 +52,7 @@ namespace mtcg.repositories
             {
                 retrievedUsers = new List<User>();
             }
-            
+
             return retrievedUsers;
         }
 
@@ -81,11 +91,11 @@ namespace mtcg.repositories
 
             return user;
         }
-        
+
         public static User SelectUserByUuid(string uuid)
         {
             var user = new User();
-            
+
             try
             {
                 using (var connection = new NpgsqlConnection(ConnectionString.Credentials))
@@ -147,8 +157,10 @@ namespace mtcg.repositories
             {
                 return null;
             }
+
             return user;
         }
+
         /**
          * insert a user into database table "user"
          */
@@ -181,7 +193,7 @@ namespace mtcg.repositories
 
             return success;
         }
-        
+
         /**
          * edit user properties
          */
@@ -212,7 +224,7 @@ namespace mtcg.repositories
 
             return success;
         }
-        
+
         /**
          * delete user from database if required
          */

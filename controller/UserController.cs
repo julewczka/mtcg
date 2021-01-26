@@ -11,7 +11,7 @@ namespace mtcg.controller
     {
         public static Response Put(string token, string username, string payload)
         {
-            if (token != "admin-mtcgToken" || !token.Contains(username)) return ResponseTypes.Forbidden;
+            if (!token.Contains(username) && token != "admin-mtcgToken") return ResponseTypes.Forbidden;
 
             var updateUser = JsonSerializer.Deserialize<User>(payload);
             if (updateUser == null) return ResponseTypes.BadRequest;

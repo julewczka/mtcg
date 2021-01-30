@@ -38,6 +38,21 @@ namespace mtcg.repositories
             return cards;
         }
 
+        public static bool InsertStackCards(string userUuid, string cardUuid, NpgsqlConnection connection,
+            NpgsqlTransaction transaction)
+        {
+            //TODO: Rename Method to "Insert Stack Cards"
+            var userStack = GetStackByUserId(userUuid);
+            using var query =
+                new NpgsqlCommand("insert into stack_cards(stack_uuid, card_uuid) values (@stack_uuid, @card_uuid)",
+                    connection, transaction);
+            query.Parameters.AddWithValue("stack_uuid", Guid.Parse(userStack.Uuid));
+            query.Parameters.AddWithValue("card_uuid", Guid.Parse(cardUuid));
+
+            return query.ExecuteNonQuery() > 0;
+        }
+
+
         public static Response BuyPackage(string userUuid)
         {
             var buyPack = PackageRepository.SellPackage();
@@ -132,29 +147,17 @@ namespace mtcg.repositories
             return stack;
         }
 
-        public static bool DeleteCardFromStackByCardUuid(string stackUuid, string cardUuid)
+        public static bool DeleteCardFromStackByCardUuid(string stackUuid, string cardUuid, NpgsqlConnection connection,
+            NpgsqlTransaction transaction)
         {
-            //TODO: connection nach außen schieben
-            //commit & rollback
-            using var connection = new NpgsqlConnection(ConnectionString.Credentials);
-            //var transaction = connection.BeginTransaction();
             using var query =
-                new NpgsqlCommand("delete from stack_cards where stack_uuid::text = @stack_uuid and card_uuid::text = @card_uuid", connection);
+                new NpgsqlCommand(
+                    "delete from stack_cards where stack_uuid::text = @stack_uuid and card_uuid::text = @card_uuid",
+                    connection, transaction);
             query.Parameters.AddWithValue("stack_uuid", stackUuid);
             query.Parameters.AddWithValue("card_uuid", cardUuid);
-            connection.Open();
-            try
-            {
-                var result = query.ExecuteNonQuery() > 0;
-                connection.Close();
-                return result;
-            }
-            catch (Exception pe)
-            {
-                Console.WriteLine(pe.Message);
-                Console.WriteLine(pe.StackTrace);
-                return false;
-            }
+
+            return query.ExecuteNonQuery() > 0;
         }
 
         public static bool IsCardInStack(string cardUuid, string stackUuid)

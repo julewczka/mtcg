@@ -14,17 +14,18 @@ namespace mtcg.controller
         public static Response Get(IReadOnlyList<string> resource)
         {
             var content = new StringBuilder();
+            var tradingRepository = new TradingRepository();
             switch (resource.Count)
             {
                 case 1:
-                    var fetchedTradings = TradingRepository.GetAllDeals();
+                    var fetchedTradings = tradingRepository.GetAllDeals();
                     if (fetchedTradings.Count <= 0)
                         return ResponseTypes.CustomError("No trading deals at the moment!", 404);
                     fetchedTradings.ForEach(trading =>
                         content.Append(JsonSerializer.Serialize(trading) + "," + Environment.NewLine));
                     break;
                 case 2:
-                    var fetchedTrading = TradingRepository.GetDealByUuid(resource[1]);
+                    var fetchedTrading = tradingRepository.GetDealByUuid(resource[1]);
                     if (fetchedTrading?.Uuid == null) return ResponseTypes.NotFoundRequest;
                     content.Append(JsonSerializer.Serialize(fetchedTrading) + "," + Environment.NewLine);
                     break;
@@ -35,22 +36,26 @@ namespace mtcg.controller
             return ResponseTypes.CustomResponse(content.ToString(), 200, "application/json");
         }
 
+        
         public static Response Delete(string token, string tradingUuid)
         {
-            var trading = TradingRepository.GetDealByUuid(tradingUuid);
+            var tradingRepository = new TradingRepository();
+            var trading = tradingRepository.GetDealByUuid(tradingUuid);
             if (trading?.Uuid == null) return ResponseTypes.NotFoundRequest;
             var user = UserRepository.SelectUserByToken(token);
             if (user.Id != trading.Trader) return ResponseTypes.Forbidden;
-            return TradingRepository.DeleteTrading(trading.Uuid) ? ResponseTypes.HttpOk : ResponseTypes.BadRequest;
+            return TradingRepository.DeleteDealByUuid(trading.Uuid) ? ResponseTypes.HttpOk : ResponseTypes.BadRequest;
         }
 
         public static Response Post(string token, IReadOnlyList<string> resource, string payload)
         {
+            var tradingRepository = new TradingRepository();
             switch (resource.Count)
             {
                 case 1:
                     var user = UserRepository.SelectUserByToken(token);
                     var trading = JsonSerializer.Deserialize<Trading>(payload);
+                    
                     if (trading?.Uuid == null) return ResponseTypes.BadRequest;
                     trading.Trader = user.Id;
                     var offeredCard = CardRepository.SelectCardByUuid(trading.CardToTrade);
@@ -72,8 +77,9 @@ namespace mtcg.controller
                     
                     lock (TradingLock)
                     {
-                        if (!TradingRepository.StartToTrade(resource[1], cleanPayload, token))
-                            return ResponseTypes.BadRequest;
+                        var response = tradingRepository.BeginTradeTransaction(resource[1], cleanPayload, token);
+                        if (response.StatusCode != 200) return response;
+                        
                         var cardToTrade = CardRepository.SelectCardByUuid(cleanPayload);
                         StackController.RemoveFromLockList(cardToTrade);
                     }
@@ -98,8 +104,9 @@ namespace mtcg.controller
 
         private static Response ValidateTrade(string tradingUuid, string cardUuid, string token)
         {
+            var tradingRepository = new TradingRepository();
             //check if trading deal exists
-            var trading = TradingRepository.GetDealByUuid(tradingUuid);
+            var trading = tradingRepository.GetDealByUuid(tradingUuid);
             if (trading?.Uuid == null) return ResponseTypes.NotFoundRequest;
             if (trading?.Trader == null) return ResponseTypes.NotFoundRequest;
             if (trading?.CardToTrade == null) return ResponseTypes.NotFoundRequest;

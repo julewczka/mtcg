@@ -1,20 +1,30 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 using mtcg.classes.entities;
+using mtcg.controller;
 using mtcg.types;
 using Npgsql;
 
 namespace mtcg.repositories
 {
-    public static class TradingRepository
+    public class TradingRepository
     {
+        private static NpgsqlConnection connection;
+        private static NpgsqlTransaction transaction;
 
-        public static List<Trading> GetAllDeals()
+        public TradingRepository()
+        {
+            connection = new NpgsqlConnection(ConnectionString.Credentials);
+            connection.Open();
+            transaction = connection.BeginTransaction();
+        }
+        public List<Trading> GetAllDeals()
         {
             var tradings = new List<Trading>();
-            using var connection = new NpgsqlConnection(ConnectionString.Credentials);
+            //using var connection = new NpgsqlConnection(ConnectionString.Credentials);
             using var query = new NpgsqlCommand("select * from trading", connection);
-            connection.Open();
+            //connection.Open();
             try
             {
                 var fetch = query.ExecuteReader();
@@ -41,13 +51,13 @@ namespace mtcg.repositories
             return tradings;
         }
 
-        public static Trading GetDealByUuid(string uuid)
+        public Trading GetDealByUuid(string uuid)
         {
             var trading = new Trading();
-            using var connection = new NpgsqlConnection(ConnectionString.Credentials);
+            //using var connection = new NpgsqlConnection(ConnectionString.Credentials);
             using var query = new NpgsqlCommand("select * from trading where uuid::text = @uuid", connection);
             query.Parameters.AddWithValue("uuid", uuid);
-            connection.Open();
+            //connection.Open();
             try
             {
                 var fetch = query.ExecuteReader();
@@ -93,65 +103,98 @@ namespace mtcg.repositories
                 return false;
             }
         }
-        public static bool StartToTrade(string tradingUuid, string cardUuid, string token)
-        {
-            //TODO: transactions verwenden
-            var tradingTarget = GetDealByUuid(tradingUuid);
-            var targetCard = CardRepository.SelectCardByUuid(tradingTarget.CardToTrade);
-            var oldOwner = UserRepository.SelectUserByUuid(tradingTarget.Trader);
-            var oldOwnerStack = StackRepository.GetStackByUserId(oldOwner.Id);
-            var newOwner = UserRepository.SelectUserByToken(token);
-            var newOwnerStack = StackRepository.GetStackByUserId(newOwner.Id);
 
-            if (!SwitchCardOwner(newOwner.Id, targetCard.Uuid)) return false;
-            if (!StackRepository.DeleteCardFromStackByCardUuid(oldOwnerStack.Uuid,targetCard.Uuid)) return false;
-            if (!SwitchCardOwner(oldOwner.Id, cardUuid)) return false;
-            if (!StackRepository.DeleteCardFromStackByCardUuid(newOwnerStack.Uuid,cardUuid)) return false;
-            if (!DeleteTrading(tradingUuid)) return false;
-            
-            return true;
-        }
-
-        public static bool DeleteTrading(string tradingUuid)
+        public static bool DeleteDealByUuid(string tradingUuid)
         {
-            using var connection = new NpgsqlConnection(ConnectionString.Credentials);
+            using var conn = new NpgsqlConnection(ConnectionString.Credentials);
             using var query =
-                new NpgsqlCommand("delete from trading where uuid::text = @uuid", connection);
+                new NpgsqlCommand("delete from trading where uuid::text = @uuid", conn);
             query.Parameters.AddWithValue("uuid", tradingUuid);
-
-            connection.Open();
-            try
-            {
-                return query.ExecuteNonQuery() > 0;
-            }
-            catch (PostgresException pe)
-            {
-                Console.WriteLine(pe.Message);
-                Console.WriteLine(pe.StackTrace);
-                return false;
-            }
+            conn.Open();
+            return query.ExecuteNonQuery() > 0;
         }
 
-        private static bool SwitchCardOwner(string userUuid, string cardUuid)
+        public Response BeginTradeTransaction(string dealUuid, string offeredCardUuid, string token)
         {
-            var userStack = StackRepository.GetStackByUserId(userUuid);
+            var success = true;
+            var content = new StringBuilder();
+
             using var connection = new NpgsqlConnection(ConnectionString.Credentials);
-            using var query =
-                new NpgsqlCommand("insert into stack_cards(stack_uuid, card_uuid) values (@stack_uuid, @card_uuid)",
-                    connection);
-            query.Parameters.AddWithValue("stack_uuid", Guid.Parse(userStack.Uuid));
-            query.Parameters.AddWithValue("card_uuid", Guid.Parse(cardUuid));
             connection.Open();
+            var transaction = connection.BeginTransaction();
+
+            var deal = GetDealByUuid(dealUuid);
+            var cardToTrade = CardRepository.SelectCardByUuid(deal.CardToTrade);
+            var trader = UserRepository.SelectUserByUuid(deal.Trader);
+            var traderStack = StackRepository.GetStackByUserId(trader.Id);
+            var requester = UserRepository.SelectUserByToken(token);
+            var requesterStack = StackRepository.GetStackByUserId(requester.Id);
+
             try
             {
-                return query.ExecuteNonQuery() > 0;
+                if (!SwitchCardOwner(requester.Id, cardToTrade.Uuid, connection, transaction))
+                {
+                    content.Append("switch requested card to trade requester failed!");
+                    success = false;
+                }
+
+                if (!StackRepository.DeleteCardFromStackByCardUuid(traderStack.Uuid, cardToTrade.Uuid, connection,
+                    transaction))
+                {
+                    content.Append("remove card from traders stack failed!");
+                    success = false;
+                }
+
+                if (!SwitchCardOwner(trader.Id, offeredCardUuid, connection, transaction))
+                { 
+                    content.Append("switch offered card to trader failed!");
+                    success = false;
+                }
+
+                if (!StackRepository.DeleteCardFromStackByCardUuid(requesterStack.Uuid, offeredCardUuid, connection,
+                    transaction))
+                {
+                    content.Append("remove card from requesters stack failed!");
+                    success = false;
+                }
+
+                if (!DeleteTrading(dealUuid, connection, transaction))
+                {
+                    content.Append("delete deal failed!");
+                    success = false;
+                }
+
+                if (!success)
+                {
+                    transaction.Rollback();
+                    return ResponseTypes.CustomError(content.ToString(), 400);
+                }
+
+                transaction.Commit();
             }
-            catch (PostgresException pe)
+            catch (Exception e)
             {
-                Console.WriteLine(pe.Message);
-                Console.WriteLine(pe.StackTrace);
-                return false;
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
+                transaction.Rollback();
+                return ResponseTypes.BadRequest;
             }
+
+            return ResponseTypes.Created;
         }
+
+        private static bool SwitchCardOwner(string userUuid, string cardUuid, NpgsqlConnection connection,
+            NpgsqlTransaction transaction)
+        {
+            return StackRepository.InsertStackCards(userUuid, cardUuid, connection, transaction);
+        }
+        private static bool DeleteTrading(string tradingUuid, NpgsqlConnection connection, NpgsqlTransaction transaction)
+        {
+            using var query =
+                new NpgsqlCommand("delete from trading where uuid::text = @uuid", connection, transaction);
+            query.Parameters.AddWithValue("uuid", tradingUuid);
+            return query.ExecuteNonQuery() > 0;
+        }
+
     }
 }

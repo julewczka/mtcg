@@ -1,4 +1,8 @@
 # Default ignored files
 .idea/*
-obj/Debug/*
-bin/Debug/*
+bin/executable
+Folder.DotSettings.user
+obj/*.json
+obj/*.props
+obj/*.cache
+obj/*.targets

@@ -11,32 +11,32 @@ namespace mtcg.controller
     {
         public static Response Put(string token, string username, string payload)
         {
-            if (!token.Contains(username) && token != "admin-mtcgToken") return ResponseTypes.Forbidden;
+            if (!token.Contains(username) && token != "admin-mtcgToken") return RTypes.Forbidden;
 
             var updateUser = JsonSerializer.Deserialize<User>(payload);
-            if (updateUser == null) return ResponseTypes.BadRequest;
+            if (updateUser == null) return RTypes.BadRequest;
             updateUser.Username = username;
 
             return UserRepository.UpdateUser(updateUser)
-                ? ResponseTypes.Created
-                : ResponseTypes.BadRequest;
+                ? RTypes.Created
+                : RTypes.BadRequest;
         }
 
         public static Response Post(string payload)
         {
             var createUser = JsonSerializer.Deserialize<User>(payload);
-            if (createUser == null) return ResponseTypes.BadRequest;
+            if (createUser == null) return RTypes.BadRequest;
             createUser.Name = createUser.Username;
             createUser.Token = createUser.Username + "-mtcgToken";
 
             return UserRepository.InsertUser(createUser)
-                ? ResponseTypes.Created
-                : ResponseTypes.BadRequest;
+                ? RTypes.Created
+                : RTypes.BadRequest;
         }
 
         public static Response Get(string token, IReadOnlyList<string> resource)
         {
-            if (resource.Count > 1 && !token.Contains(resource[1])) return ResponseTypes.Forbidden;
+            if (resource.Count > 1 && !token.Contains(resource[1])) return RTypes.Forbidden;
             
             var fetchedUsers = new List<User>();
             var content = new StringBuilder();
@@ -44,7 +44,7 @@ namespace mtcg.controller
             switch (resource.Count)
             {
                 case 1:
-                    if (token != "admin-mtcgToken") return ResponseTypes.Forbidden;
+                    if (token != "admin-mtcgToken") return RTypes.Forbidden;
                     fetchedUsers.AddRange(UserRepository.SelectAll());
                     fetchedUsers.ForEach(user =>
                         {
@@ -55,23 +55,23 @@ namespace mtcg.controller
                     break;
                 case 2:
                     var fetchedSingleUser = UserRepository.SelectUserByUsername(resource[1]);
-                    if (fetchedSingleUser == null) return ResponseTypes.NotFoundRequest;
+                    if (fetchedSingleUser == null) return RTypes.NotFoundRequest;
                     content.Append(JsonSerializer.Serialize(fetchedSingleUser) + "," + Environment.NewLine);
                     break;
                 default:
-                    return ResponseTypes.BadRequest;
+                    return RTypes.BadRequest;
             }
 
-            return ResponseTypes.CustomResponse(content.ToString(), 200, "application/json");
+            return RTypes.CResponse(content.ToString(), 200, "application/json");
         }
 
         public static Response Delete(string token, string uuid)
         {
-            if (token != "admin-mtcgToken") return ResponseTypes.Forbidden;
+            if (token != "admin-mtcgToken") return RTypes.Forbidden;
 
             return UserRepository.DeleteUser(uuid)
-                ? ResponseTypes.HttpOk
-                : ResponseTypes.BadRequest;
+                ? RTypes.HttpOk
+                : RTypes.BadRequest;
         }
     }
 }

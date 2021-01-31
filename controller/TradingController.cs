@@ -20,20 +20,20 @@ namespace mtcg.controller
                 case 1:
                     var fetchedTradings = tradingRepository.GetAllDeals();
                     if (fetchedTradings.Count <= 0)
-                        return ResponseTypes.CustomError("No trading deals at the moment!", 404);
+                        return RTypes.CError("No trading deals at the moment!", 404);
                     fetchedTradings.ForEach(trading =>
                         content.Append(JsonSerializer.Serialize(trading) + "," + Environment.NewLine));
                     break;
                 case 2:
                     var fetchedTrading = tradingRepository.GetDealByUuid(resource[1]);
-                    if (fetchedTrading?.Uuid == null) return ResponseTypes.NotFoundRequest;
+                    if (fetchedTrading?.Uuid == null) return RTypes.NotFoundRequest;
                     content.Append(JsonSerializer.Serialize(fetchedTrading) + "," + Environment.NewLine);
                     break;
                 default:
-                    return ResponseTypes.BadRequest;
+                    return RTypes.BadRequest;
             }
 
-            return ResponseTypes.CustomResponse(content.ToString(), 200, "application/json");
+            return RTypes.CResponse(content.ToString(), 200, "application/json");
         }
 
         
@@ -41,10 +41,10 @@ namespace mtcg.controller
         {
             var tradingRepository = new TradingRepository();
             var trading = tradingRepository.GetDealByUuid(tradingUuid);
-            if (trading?.Uuid == null) return ResponseTypes.NotFoundRequest;
+            if (trading?.Uuid == null) return RTypes.NotFoundRequest;
             var user = UserRepository.SelectUserByToken(token);
-            if (user.Id != trading.Trader) return ResponseTypes.Forbidden;
-            return TradingRepository.DeleteDealByUuid(trading.Uuid) ? ResponseTypes.HttpOk : ResponseTypes.BadRequest;
+            if (user.Id != trading.Trader) return RTypes.Forbidden;
+            return tradingRepository.DeleteDealByUuid(trading.Uuid) ? RTypes.HttpOk : RTypes.BadRequest;
         }
 
         public static Response Post(string token, IReadOnlyList<string> resource, string payload)
@@ -56,29 +56,29 @@ namespace mtcg.controller
                     var user = UserRepository.SelectUserByToken(token);
                     var trading = JsonSerializer.Deserialize<Trading>(payload);
                     
-                    if (trading?.Uuid == null) return ResponseTypes.BadRequest;
+                    if (trading?.Uuid == null) return RTypes.BadRequest;
                     trading.Trader = user.Id;
                     var offeredCard = CardRepository.SelectCardByUuid(trading.CardToTrade);
-                    var stack = StackRepository.GetStackByUserId(trading.Trader);
-                    var validate = ValidateRequestedDeal(token, offeredCard, stack);
+                    var stack = StackRepository.SelectStackByUserId(trading.Trader);
+                    var validate = CheckDeal(token, offeredCard, stack);
                     if (validate != null) return validate;
 
                     lock (TradingLock)
                     {
-                        if (!TradingRepository.InsertTradingDeal(trading)) return ResponseTypes.BadRequest;
+                        if (!tradingRepository.AddDeal(trading)) return RTypes.BadRequest;
                         StackController.AddToLockList(offeredCard);
                     }
 
                     break;
                 case 2:
                     var cleanPayload = payload.Replace("\"", string.Empty);
-                    var validateTrade = ValidateTrade(resource[1], cleanPayload, token);
+                    var validateTrade = CheckTrade(resource[1], cleanPayload, token);
                     if (validateTrade != null) return validateTrade;
                     
                     lock (TradingLock)
                     {
-                        var response = tradingRepository.BeginTradeTransaction(resource[1], cleanPayload, token);
-                        if (response.StatusCode != 200) return response;
+                        if (!tradingRepository.BeginTrade(resource[1], cleanPayload, token))
+                            return RTypes.CError("transaction failed", 400);
                         
                         var cardToTrade = CardRepository.SelectCardByUuid(cleanPayload);
                         StackController.RemoveFromLockList(cardToTrade);
@@ -86,58 +86,58 @@ namespace mtcg.controller
                     
                     break;
                 default:
-                    return ResponseTypes.BadRequest;
+                    return RTypes.BadRequest;
             }
 
-            return ResponseTypes.Created;
+            return RTypes.Created;
         }
 
-        private static Response ValidateRequestedDeal(string token, Card offeredCard, Stack stack)
+        private static Response CheckDeal(string token, Card offeredCard, Stack stack)
         {
-            if (UserRepository.SelectUserByToken(token).Id == null) return ResponseTypes.Forbidden;
-            if (offeredCard?.Uuid == null) return ResponseTypes.NotFoundRequest;
-            if (stack?.Uuid == null) return ResponseTypes.Forbidden;
-            if (!StackRepository.IsCardInStack(offeredCard.Uuid, stack.Uuid)) return ResponseTypes.Forbidden;
-            if (DeckRepository.IsCardInDeck(offeredCard.Uuid)) return ResponseTypes.Forbidden;
-            return PackageRepository.IsCardInPackages(offeredCard.Uuid) ? ResponseTypes.Forbidden : null;
+            if (UserRepository.SelectUserByToken(token).Id == null) return RTypes.Forbidden;
+            if (offeredCard?.Uuid == null) return RTypes.NotFoundRequest;
+            if (stack?.Uuid == null) return RTypes.Forbidden;
+            if (!StackRepository.IsCardInStack(offeredCard.Uuid, stack.Uuid)) return RTypes.Forbidden;
+            if (DeckRepository.IsCardInDeck(offeredCard.Uuid)) return RTypes.Forbidden;
+            return PackageRepository.IsCardInPackages(offeredCard.Uuid) ? RTypes.Forbidden : null;
         }
 
-        private static Response ValidateTrade(string tradingUuid, string cardUuid, string token)
+        private static Response CheckTrade(string tradingUuid, string cardUuid, string token)
         {
             var tradingRepository = new TradingRepository();
             //check if trading deal exists
             var trading = tradingRepository.GetDealByUuid(tradingUuid);
-            if (trading?.Uuid == null) return ResponseTypes.NotFoundRequest;
-            if (trading?.Trader == null) return ResponseTypes.NotFoundRequest;
-            if (trading?.CardToTrade == null) return ResponseTypes.NotFoundRequest;
+            if (trading?.Uuid == null) return RTypes.NotFoundRequest;
+            if (trading?.Trader == null) return RTypes.NotFoundRequest;
+            if (trading?.CardToTrade == null) return RTypes.NotFoundRequest;
 
             //check if offered card exists
             var card = CardRepository.SelectCardByUuid(cardUuid);
-            if (card?.Uuid == null) return ResponseTypes.Forbidden;
+            if (card?.Uuid == null) return RTypes.Forbidden;
 
             //check if trader is the same as the buyer
             var newOwner = UserRepository.SelectUserByToken(token);
-            if (newOwner?.Id == null) return ResponseTypes.Unauthorized;
+            if (newOwner?.Id == null) return RTypes.Unauthorized;
             if (trading.Trader.Equals(newOwner.Id, StringComparison.CurrentCultureIgnoreCase))
-                return ResponseTypes.BadRequest;
+                return RTypes.BadRequest;
 
             //check if buyer has a stack
-            var newOwnerStack = StackRepository.GetStackByUserId(newOwner.Id);
-            if (newOwnerStack?.Uuid == null) return ResponseTypes.CustomError("Buyer has no stack", 404);
+            var newOwnerStack = StackRepository.SelectStackByUserId(newOwner.Id);
+            if (newOwnerStack?.Uuid == null) return RTypes.CError("Buyer has no stack", 404);
 
             //check if Card is in stack, deck or package
             if (!StackRepository.IsCardInStack(cardUuid, newOwnerStack.Uuid))
-                return ResponseTypes.CustomError("Card must be in stack", 403);
+                return RTypes.CError("Card must be in stack", 403);
             if (PackageRepository.IsCardInPackages(cardUuid))
-                return ResponseTypes.CustomError("Card mustn't be in package", 403);
-            if (DeckRepository.IsCardInDeck(cardUuid)) return ResponseTypes.CustomError("Card mustn't be in deck", 403);
+                return RTypes.CError("Card mustn't be in package", 403);
+            if (DeckRepository.IsCardInDeck(cardUuid)) return RTypes.CError("Card mustn't be in deck", 403);
 
             //check if offered card meets requirements
             if (!trading.CardType.Equals(card.CardType, StringComparison.CurrentCultureIgnoreCase))
                 return
-                    ResponseTypes.CustomError($"offered card have to be type of {trading.CardType}", 403);
-            if (trading.MinimumDamage <= card.Damage)
-                return ResponseTypes.CustomError(
+                    RTypes.CError($"offered card have to be type of {trading.CardType}", 403);
+            if (trading.MinimumDamage >= card.Damage)
+                return RTypes.CError(
                     $"offered card's damage must be higher than required {trading.MinimumDamage}", 403);
             return null;
         }

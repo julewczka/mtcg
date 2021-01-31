@@ -11,7 +11,7 @@ namespace mtcg.controller
             return resource switch
             {
                 "packages" => BuyPackage(token),
-                _ => ResponseTypes.NotFoundRequest
+                _ => RTypes.NotFoundRequest
             };
         }
 
@@ -20,7 +20,7 @@ namespace mtcg.controller
             lock (TransactionLock)
             {
                 var user = UserRepository.SelectUserByToken(token);
-                return user?.Id == null ? ResponseTypes.Unauthorized : StackRepository.BuyPackage(user.Id);
+                return user?.Id == null ? RTypes.Unauthorized : StackRepository.BuyPackage(user.Id);
             }
         }
     }

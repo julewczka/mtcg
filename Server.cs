@@ -72,7 +72,7 @@ namespace mtcg
             }
             else
             {
-                var response = ResponseTypes.BadRequest;
+                var response = RTypes.BadRequest;
                 response.Send(stream);
             }
 

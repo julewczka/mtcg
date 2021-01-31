@@ -28,13 +28,13 @@ namespace mtcg.controller
                 var loginUser = JsonSerializer.Deserialize<User>(payload);
                 var timestamp = DateTime.Now;
 
-                if (string.IsNullOrEmpty(loginUser?.Username)) return ResponseTypes.Unauthorized;
+                if (string.IsNullOrEmpty(loginUser?.Username)) return RTypes.Unauthorized;
 
-                if (CheckSessionList(loginUser.Username)) return ResponseTypes.MethodNotAllowed;
+                if (CheckSessionList(loginUser.Username)) return RTypes.MethodNotAllowed;
 
                 var retrievedUser = SessionRepository.GetUserByName(loginUser.Username);
                 if (retrievedUser == null || loginUser.Password != retrievedUser.Password)
-                    return ResponseTypes.Unauthorized;
+                    return RTypes.Unauthorized;
 
                 loginUser.Password = string.Empty;
                 retrievedUser.Password = string.Empty;
@@ -42,19 +42,19 @@ namespace mtcg.controller
                 SessionList.Add(loginUser.Username, timestamp);
                 SessionRepository.LogLogin(loginUser.Username, timestamp);
             }
-            return ResponseTypes.CustomResponse("Authenticated", 200, "text/plain");
+            return RTypes.CResponse("Authenticated", 200, "text/plain");
         }
 
         public static Response GetLogs()
         {
             var logs = SessionRepository.GetLogs();
             var data = new StringBuilder();
-            if (logs == null) return ResponseTypes.NotFoundRequest;
+            if (logs == null) return RTypes.NotFoundRequest;
 
             logs.ForEach(log => { data.Append(JsonSerializer.Serialize(log) + "," + Environment.NewLine); }
             );
 
-            return ResponseTypes.CustomResponse(data.ToString(), 200, "application/json");
+            return RTypes.CResponse(data.ToString(), 200, "application/json");
         }
 
         /**

@@ -44,6 +44,7 @@ namespace mtcg.repositories
 
         public static Card SelectCardByUuid(string uuid)
         {
+
             var card = new Card();
             using var connection = new NpgsqlConnection(ConnectionString.Credentials);
             using var query = new NpgsqlCommand("select * from card where uuid::text = @uuid", connection);

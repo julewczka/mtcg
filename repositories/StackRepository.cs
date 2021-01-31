@@ -19,7 +19,7 @@ namespace mtcg.repositories
         {
             var cards = new List<Card>();
 
-            var stack = GetStackByUserId(uuid);
+            var stack = SelectStackByUserId(uuid);
 
             if (stack?.Uuid == null) return null;
 
@@ -41,8 +41,7 @@ namespace mtcg.repositories
         public static bool InsertStackCards(string userUuid, string cardUuid, NpgsqlConnection connection,
             NpgsqlTransaction transaction)
         {
-            //TODO: Rename Method to "Insert Stack Cards"
-            var userStack = GetStackByUserId(userUuid);
+            var userStack = SelectStackByUserId(userUuid);
             using var query =
                 new NpgsqlCommand("insert into stack_cards(stack_uuid, card_uuid) values (@stack_uuid, @card_uuid)",
                     connection, transaction);
@@ -56,27 +55,27 @@ namespace mtcg.repositories
         public static Response BuyPackage(string userUuid)
         {
             var buyPack = PackageRepository.SellPackage();
-            if (buyPack == null) return ResponseTypes.CustomError("No package available at the moment!", 404);
+            if (buyPack == null) return RTypes.CError("No package available at the moment!", 404);
 
             var user = UserRepository.SelectUserByUuid(userUuid);
-            if (user.Coins < buyPack.Price) return ResponseTypes.CustomError("Not enough coins!", 403);
+            if (user.Coins < buyPack.Price) return RTypes.CError("Not enough coins!", 403);
             ;
             user.Coins -= buyPack.Price;
 
-            var stack = GetStackByUserId(userUuid);
+            var stack = SelectStackByUserId(userUuid);
             var stackUuid = stack.Uuid ?? CreateStack(userUuid);
-            if (string.IsNullOrEmpty(stackUuid)) return ResponseTypes.CustomError("Stack not found!", 404);
+            if (string.IsNullOrEmpty(stackUuid)) return RTypes.CError("Stack not found!", 404);
 
             var stackCards = buyPack.Cards.Select(card => AddRelationship(card.Uuid, stackUuid)).ToList();
             if (!PackageRepository.DeletePackage(buyPack.Uuid))
-                return ResponseTypes.CustomError("package couldn't be deleted!", 500);
+                return RTypes.CError("package couldn't be deleted!", 500);
 
-            if (!UserRepository.UpdateUser(user)) return ResponseTypes.CustomError("User couldn't be updated!", 500);
+            if (!UserRepository.UpdateUser(user)) return RTypes.CError("User couldn't be updated!", 500);
             ;
 
             return stackCards.Contains(false)
-                ? ResponseTypes.CustomError("Buying package failed!", 500)
-                : ResponseTypes.HttpOk;
+                ? RTypes.CError("Buying package failed!", 500)
+                : RTypes.HttpOk;
         }
 
         private static bool AddRelationship(string cardUuid, string stackUuid)
@@ -124,8 +123,9 @@ namespace mtcg.repositories
             return uuid;
         }
 
-        public static Stack GetStackByUserId(string uuid)
+        public static Stack SelectStackByUserId(string uuid)
         {
+
             var stack = new Stack();
             using var connection = new NpgsqlConnection(ConnectionString.Credentials);
             using var query = new NpgsqlCommand("select * from stack where user_uuid::text = @uuid", connection);

@@ -16,14 +16,14 @@ namespace mtcg.controller
             var data = new StringBuilder();
 
             var user = UserRepository.SelectUserByToken(token);
-            if (user == null) return ResponseTypes.NotFoundRequest;
+            if (user == null) return RTypes.NotFoundRequest;
            
             var listStack = StackRepository.GetStack(user.Id);
-            if (listStack == null) return ResponseTypes.NotFoundRequest;
+            if (listStack == null) return RTypes.NotFoundRequest;
             
             listStack.ForEach(card => { data.Append(JsonSerializer.Serialize(card)); });
 
-            return ResponseTypes.CustomResponse(data.ToString(), 200, "application/json");
+            return RTypes.CResponse(data.ToString(), 200, "application/json");
         }
 
         public static bool IsLocked(Card card)

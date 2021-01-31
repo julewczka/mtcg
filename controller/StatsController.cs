@@ -10,11 +10,11 @@ namespace mtcg.controller
         public static Response Get(string token)
         {
             var stats = StatsRepository.SelectStatsByToken(token);
-            if (stats == null) return ResponseTypes.Forbidden;
+            if (stats == null) return RTypes.Forbidden;
 
             var content = new StringBuilder();
             content.Append(JsonSerializer.Serialize(stats));
-            return ResponseTypes.CustomResponse(content.ToString(), 200, "application/json");
+            return RTypes.CResponse(content.ToString(), 200, "application/json");
         }
         
         public static string CreateStatsIfNotExist(string userUuid)

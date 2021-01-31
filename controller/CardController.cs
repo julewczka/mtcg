@@ -27,35 +27,35 @@ namespace mtcg.controller
                     break;
             }
 
-            return ResponseTypes.CustomResponse(content.ToString(), 200, "application/json");
+            return RTypes.CResponse(content.ToString(), 200, "application/json");
         }
 
         public static Response Post(string payload)
         {
             var createCard = JsonSerializer.Deserialize<Card>(payload);
-            if (createCard == null) return ResponseTypes.BadRequest;
+            if (createCard == null) return RTypes.BadRequest;
 
             return CardRepository.InsertCard(createCard)
-                ? ResponseTypes.Created
-                : ResponseTypes.BadRequest;
+                ? RTypes.Created
+                : RTypes.BadRequest;
         }
 
         public static Response Put(string uuid, string payload)
         {
             var updateCard = JsonSerializer.Deserialize<Card>(payload);
-            if (updateCard == null) return ResponseTypes.BadRequest;
+            if (updateCard == null) return RTypes.BadRequest;
             updateCard.Uuid = uuid;
 
             return CardRepository.UpdateCard(updateCard)
-                ? ResponseTypes.Created
-                : ResponseTypes.BadRequest;
+                ? RTypes.Created
+                : RTypes.BadRequest;
         }
 
         public static Response Delete(string uuid)
         {
             return CardRepository.DeleteCard(uuid)
-                ? ResponseTypes.HttpOk
-                : ResponseTypes.BadRequest;
+                ? RTypes.HttpOk
+                : RTypes.BadRequest;
         }
     }
 }

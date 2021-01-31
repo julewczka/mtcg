@@ -29,19 +29,19 @@ namespace mtcg.controller
                 //TODO: implement view for single package
                 break;
                 default:
-                    return ResponseTypes.BadRequest;
+                    return RTypes.BadRequest;
             }
 
-            return ResponseTypes.CustomResponse(data.ToString(), 200, "application/json");
+            return RTypes.CResponse(data.ToString(), 200, "application/json");
         }
         public static Response Post(string token, string payload)
         {
-            if (token != "admin-mtcgToken") return ResponseTypes.Forbidden;
+            if (token != "admin-mtcgToken") return RTypes.Forbidden;
 
             var cards = JsonSerializer.Deserialize<Card[]>(payload);
             return PackageRepository.CreatePackage(cards)
-                ? ResponseTypes.Created
-                : ResponseTypes.BadRequest;
+                ? RTypes.Created
+                : RTypes.BadRequest;
         }
     }
 }

@@ -29,7 +29,7 @@ namespace mtcg.controller
                    return battle.StartBattle();
                 }
             }
-            return ResponseTypes.CustomResponse("waiting...", 200, "text/plain");
+            return RTypes.CResponse("waiting...", 200, "text/plain");
         }
 
         public static List<User> GetBattleList()

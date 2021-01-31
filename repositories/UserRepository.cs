@@ -94,6 +94,7 @@ namespace mtcg.repositories
 
         public static User SelectUserByUuid(string uuid)
         {
+
             var user = new User();
 
             try
@@ -129,6 +130,7 @@ namespace mtcg.repositories
 
         public static User SelectUserByToken(string token)
         {
+
             var user = new User();
             try
             {

@@ -51,8 +51,8 @@ namespace mtcg.classes.game.model
             var nl = Environment.NewLine;
             var content = new StringBuilder(_battleLog + nl);
 
-            if (Deck1?.Cards == null) return ResponseTypes.Forbidden;
-            if (Deck2?.Cards == null) return ResponseTypes.Forbidden;
+            if (Deck1?.Cards == null) return RTypes.Forbidden;
+            if (Deck2?.Cards == null) return RTypes.Forbidden;
 
             content.Append("Start battle:" + nl);
 
@@ -91,7 +91,7 @@ namespace mtcg.classes.game.model
                 }
             }
 
-            return ResponseTypes.CustomResponse(content.ToString(), 200, "text/plain");
+            return RTypes.CResponse(content.ToString(), 200, "text/plain");
         }
 
         private void UpdateStats(string winnerUuid)
@@ -131,8 +131,8 @@ namespace mtcg.classes.game.model
             var updateUser = UserRepository.SelectUserByUsername(winnerUuid);
             updateUser.Coins += 5;
             return !UserRepository.UpdateUser(updateUser)
-                ? ResponseTypes.CustomError("Something went wrong", 403)
-                : ResponseTypes.CustomResponse(content, 200, "text/plain");
+                ? RTypes.CError("Something went wrong", 403)
+                : RTypes.CResponse(content, 200, "text/plain");
         }
 
         private void SwitchCardFromDeck(Card card, Deck winDeck, Deck looseDeck)

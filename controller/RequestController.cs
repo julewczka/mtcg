@@ -34,7 +34,7 @@ namespace mtcg.controller
                     "POST" => Post(token, resource, payload),
                     "PUT" => Put(token, resource, payload),
                     "DELETE" => Delete(token, resource),
-                    _ => ResponseTypes.BadRequest
+                    _ => RTypes.BadRequest
                 };
             }
             catch (PostgresException pe)
@@ -58,11 +58,11 @@ namespace mtcg.controller
 
         private static Response Get(string token, IReadOnlyList<string> resource)
         {
-            if (!IsUserAuthorized(token)) return ResponseTypes.Unauthorized;
+            if (!IsUserAuthorized(token)) return RTypes.Unauthorized;
 
             return resource[0] switch
             {
-                "/" => ResponseTypes.CustomResponse("<h1>Welcome to the Monster Trading Card Game!</h1>", 200,
+                "/" => RTypes.CResponse("<h1>Welcome to the Monster Trading Card Game!</h1>", 200,
                     "text/html"),
                 "users" => UserController.Get(token, resource),
                 "sessions" => SessionController.GetLogs(),
@@ -73,7 +73,7 @@ namespace mtcg.controller
                 "tradings" => TradingController.Get(resource),
                 "stats" => StatsController.Get(token),
                 "score" => ScoreController.GetScore(),
-                _ => ResponseTypes.NotFoundRequest
+                _ => RTypes.NotFoundRequest
             };
         }
 
@@ -82,54 +82,54 @@ namespace mtcg.controller
             if (resource[0] != "sessions" && resource[0] != "users")
             {
                 if (!IsUserAuthorized(token))
-                    return  ResponseTypes.Unauthorized;
+                    return  RTypes.Unauthorized;
             }
 
-            if (!IsValidJson(resource[0], payload)) return ResponseTypes.BadRequest;
+            if (!IsValidJson(resource[0], payload)) return RTypes.BadRequest;
             return resource[0] switch
             {
                 "users" => UserController.Post(payload),
                 "sessions" => SessionController.Login(payload),
                 "packages" => PackageController.Post(token, payload),
-                "stack" => ResponseTypes.MethodNotAllowed,
+                "stack" => RTypes.MethodNotAllowed,
                 "deck" => DeckController.CreateDeck(token, payload),
                 "tradings" => TradingController.Post(token, resource, payload),
                 "transactions" => TransactionController.StartTransaction(resource[1], token),
                 "battles" => BattleController.Post(token),
-                "cards" => ResponseTypes.MethodNotAllowed, //CardController.Post(payload),
-                "/" => ResponseTypes.MethodNotAllowed,
-                _ => ResponseTypes.NotFoundRequest
+                "cards" => RTypes.MethodNotAllowed, //CardController.Post(payload),
+                "/" => RTypes.MethodNotAllowed,
+                _ => RTypes.NotFoundRequest
             };
         }
 
         private static Response Put(string token, IReadOnlyList<string> resource, string payload)
         {
-            if (!IsUserAuthorized(token)) return ResponseTypes.Unauthorized;
-            if (resource.Count < 2 && !IsValidJson(resource[0], payload)) return ResponseTypes.BadRequest;
+            if (!IsUserAuthorized(token)) return RTypes.Unauthorized;
+            if (resource.Count < 2 && !IsValidJson(resource[0], payload)) return RTypes.BadRequest;
 
             return resource[0] switch
             {
                 "users" => UserController.Put(token, resource[1], payload),
                 "deck" => DeckController.ConfigureDeck(token, payload),
-                "cards" => ResponseTypes.MethodNotAllowed, //CardController.Put(resource[1], payload),
-                "sessions" => ResponseTypes.MethodNotAllowed,
-                "/" => ResponseTypes.MethodNotAllowed,
-                _ => ResponseTypes.NotFoundRequest
+                "cards" => RTypes.MethodNotAllowed, //CardController.Put(resource[1], payload),
+                "sessions" => RTypes.MethodNotAllowed,
+                "/" => RTypes.MethodNotAllowed,
+                _ => RTypes.NotFoundRequest
             };
         }
 
         private static Response Delete(string token, IReadOnlyList<string> resource)
         {
-            if (!IsUserAuthorized(token)) return ResponseTypes.Unauthorized;
-            if (resource.Count < 2) return ResponseTypes.BadRequest;
+            if (!IsUserAuthorized(token)) return RTypes.Unauthorized;
+            if (resource.Count < 2) return RTypes.BadRequest;
             return resource[0] switch
             {
                 "users" => UserController.Delete(token, resource[1]),
-                "cards" => ResponseTypes.MethodNotAllowed, //CardController.Delete(resource[1]),
-                "sessions" => ResponseTypes.MethodNotAllowed,
+                "cards" => RTypes.MethodNotAllowed, //CardController.Delete(resource[1]),
+                "sessions" => RTypes.MethodNotAllowed,
                 //"tradings" => TradingController.Delete(token, resource[1]),
-                "/" => ResponseTypes.MethodNotAllowed,
-                _ => ResponseTypes.NotFoundRequest
+                "/" => RTypes.MethodNotAllowed,
+                _ => RTypes.NotFoundRequest
             };
         }
 

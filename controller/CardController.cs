@@ -7,21 +7,26 @@ using mtcg.repositories;
 
 namespace mtcg.controller
 {
-    public static class CardController
+    public class CardController
     {
-        public static Response Get(string token)
+        private readonly CardRepository _cardRepo;
+
+        public CardController()
+        {
+            _cardRepo = new CardRepository();
+        }
+        public Response Get(User user)
         {
             var fetchedCards = new List<Card>();
             var content = new StringBuilder();
 
-            switch (token)
+            switch (user.Username)
             {
-                case "admin-mtcgToken":
-                    fetchedCards.AddRange(CardRepository.SelectAll());
+                case "admin":
+                    fetchedCards.AddRange(_cardRepo.GetAllCards());
                     fetchedCards.ForEach(card => content.Append(JsonSerializer.Serialize(card) + "," + Environment.NewLine));
                     break;
                 default:
-                    var user = UserRepository.SelectUserByToken(token);
                     var cards = StackRepository.GetStack(user.Id);
                     content.Append(JsonSerializer.Serialize(cards) + "," + Environment.NewLine);
                     break;
@@ -30,30 +35,30 @@ namespace mtcg.controller
             return RTypes.CResponse(content.ToString(), 200, "application/json");
         }
 
-        public static Response Post(string payload)
+        public Response Post(string payload)
         {
             var createCard = JsonSerializer.Deserialize<Card>(payload);
             if (createCard == null) return RTypes.BadRequest;
 
-            return CardRepository.InsertCard(createCard)
+            return _cardRepo.AddCard(createCard)
                 ? RTypes.Created
                 : RTypes.BadRequest;
         }
 
-        public static Response Put(string uuid, string payload)
+        public Response Put(string uuid, string payload)
         {
             var updateCard = JsonSerializer.Deserialize<Card>(payload);
             if (updateCard == null) return RTypes.BadRequest;
             updateCard.Uuid = uuid;
 
-            return CardRepository.UpdateCard(updateCard)
+            return _cardRepo.UpdateCard(updateCard)
                 ? RTypes.Created
                 : RTypes.BadRequest;
         }
 
-        public static Response Delete(string uuid)
+        public  Response Delete(string uuid)
         {
-            return CardRepository.DeleteCard(uuid)
+            return _cardRepo.DeleteCard(uuid)
                 ? RTypes.HttpOk
                 : RTypes.BadRequest;
         }

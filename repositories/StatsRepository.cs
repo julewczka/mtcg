@@ -8,7 +8,7 @@ namespace mtcg.repositories
 {
     public static class StatsRepository
     {
-        public static List<Stats> SelectAllStats()
+        public static List<Stats> GetAllStats()
         {
             var score = new List<Stats>();
             using var connection = new NpgsqlConnection(ConnectionString.Credentials);
@@ -39,17 +39,11 @@ namespace mtcg.repositories
                 Console.WriteLine(pe.StackTrace);
                 return null;
             }
+
             return score;
         }
 
-        public static Stats SelectStatsByToken(string token)
-        {
-            var user = UserRepository.SelectUserByToken(token);
-            var stats = SelectStatsByUserUuid(user.Id);
-            return stats?.StatsUuid == null ? null : stats;
-        }
-
-        public static Stats SelectStatsByUserUuid(string userUuid)
+        public static Stats GetByUserUuid(string userUuid)
         {
             var stats = new Stats();
             using var connection = new NpgsqlConnection(ConnectionString.Credentials);
@@ -79,7 +73,7 @@ namespace mtcg.repositories
             return stats;
         }
 
-        public static Stats SelectStatsByStatsUuid(string statsUuid)
+        public static Stats GetByStatsUuid(string statsUuid)
         {
             var stats = new Stats();
             using var connection = new NpgsqlConnection(ConnectionString.Credentials);
@@ -109,7 +103,7 @@ namespace mtcg.repositories
             return stats;
         }
 
-        public static string InsertStats(Stats stats)
+        public static string AddStats(Stats stats)
         {
             var statsUuid = "";
             using var connection = new NpgsqlConnection(ConnectionString.Credentials);

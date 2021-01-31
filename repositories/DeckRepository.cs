@@ -7,10 +7,25 @@ using Npgsql;
 
 namespace mtcg.repositories
 {
-    public static class DeckRepository
+    public class DeckRepository
     {
+        private readonly NpgsqlConnection _connection;
+        private readonly NpgsqlTransaction _transaction;
 
-        public static Deck GetDeckByUserUuid(string userUuid)
+        public DeckRepository()
+        {
+            _connection = new NpgsqlConnection();
+            _connection.Open();
+            _transaction = _connection.BeginTransaction();
+        }
+
+        /// <summary>
+        /// Get deck by user uuid.
+        /// Needs multiple connections because of parallel execution.
+        /// </summary>
+        /// <param name="userUuid">uuid of the user</param>
+        /// <returns>returns a deck object</returns>
+        public Deck GetDeckByUserUuid(string userUuid)
         {
             var deck = new Deck();
             using var connection = new NpgsqlConnection(ConnectionString.Credentials);
@@ -25,116 +40,135 @@ namespace mtcg.repositories
                     deck.Uuid = fetch["uuid"].ToString();
                 }
             }
-            catch (PostgresException pe)
+            catch (Exception e)
             {
-                Console.WriteLine(pe.Message);
-                Console.WriteLine(pe.StackTrace);
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
                 return null;
             }
 
             return deck;
         }
 
-        public static Deck ConfigureDeck(string token, IEnumerable<string> cardUuids)
+        public Deck ConfigureDeck(User user, IEnumerable<string> cardUuids)
         {
-            var cardList = new List<bool>();
-            var user = UserRepository.SelectUserByToken(token);
-            
-            if (user == null) return null;
-            user.Deck ??= GetDeckByUserUuid(user.Id);
-            if (user.Deck.Uuid == null) user.Deck = AddDeck(user.Id);
-            
-            var deckCards = GetCardsFromDeck(user.Deck.Uuid);
+            var success = true;
 
-            if (deckCards.Count > 0)
+            try
             {
-                if (!ClearDeckCards(user.Deck.Uuid)) return null;
-                cardList.AddRange(cardUuids.Select(cardUuid => UpdateDeck(user.Deck.Uuid, cardUuid)));
+                var cardList = new List<bool>();
+                if (user?.Id == null) return null;
+                user.Deck ??= GetDeckByUserUuid(user.Id);
+                if (user.Deck.Uuid == null) user.Deck = AddDeck(user.Id);
+                var deckCards = GetCardsFromDeck(user.Deck.Uuid);
+                if (deckCards.Count > 0)
+                {
+                    if (!ClearDeckCards(user.Deck.Uuid)) success = false;
+                    cardList.AddRange(cardUuids.Select(cardUuid =>
+                    {
+                        var isUpdated = UpdateDeck(user.Deck.Uuid, cardUuid);
+                        if (!isUpdated) success = false;
+                        return isUpdated;
+                    }));
+                }
+                else
+                {
+                    cardList.AddRange(cardUuids.Select(cardUuid =>
+                    {
+                        var isAdded = AddRelationship(user.Deck.Uuid, cardUuid);
+                        if (!isAdded) success = false;
+                        return isAdded;
+                    }));
+                }
+
+                if (cardList.Contains(false)) success = false;
+                user.Deck.Cards = GetCardsFromDeck(user.Deck.Uuid);
+
+                if (!success) _transaction.Rollback();
+
+                _transaction.Commit();
             }
-            else
+            catch (Exception e)
             {
-                cardList.AddRange(cardUuids.Select(cardUuid => AddRelationship(user.Deck.Uuid, cardUuid)));
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
+                _transaction.Rollback();
+                return null;
             }
-
-            if (cardList.Contains(false)) return null;
-
-            user.Deck.Cards = GetCardsFromDeck(user.Deck.Uuid);
-
+            
             return user.Deck;
         }
 
-        private static bool AddRelationship(string deckUuid, string cardUuid)
+        private bool AddRelationship(string deckUuid, string cardUuid)
         {
             if (string.IsNullOrEmpty(cardUuid)) return false;
-
-            using var connection = new NpgsqlConnection(ConnectionString.Credentials);
+            
             using var query =
                 new NpgsqlCommand("insert into deck_cards(deck_uuid, card_uuid) values (@deck_uuid, @card_uuid)",
-                    connection);
+                    _connection, _transaction);
             query.Parameters.AddWithValue("deck_uuid", Guid.Parse(deckUuid));
             query.Parameters.AddWithValue("card_uuid", Guid.Parse(cardUuid));
-            connection.Open();
             try
             {
                 return (query.ExecuteNonQuery() > 0);
             }
-            catch (PostgresException)
+            catch (Exception e)
             {
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
                 return false;
             }
         }
 
-        private static bool UpdateDeck(string deckUuid, string cardUuid)
+        private bool UpdateDeck(string deckUuid, string cardUuid)
         {
             return AddRelationship(deckUuid, cardUuid);
         }
 
-        private static Deck AddDeck(string userUuid)
+        private Deck AddDeck(string userUuid)
         {
             var deck = new Deck();
-            using var connection = new NpgsqlConnection(ConnectionString.Credentials);
-            using var query = new NpgsqlCommand("insert into deck(user_uuid) values(@uuid) returning uuid", connection);
+            using var query =
+                new NpgsqlCommand("insert into deck(user_uuid) values(@uuid) returning uuid", _connection,
+                    _transaction);
             query.Parameters.AddWithValue("uuid", Guid.Parse(userUuid));
             try
             {
-                connection.Open();
                 var fetch = query.ExecuteReader();
                 while (fetch.Read())
                 {
                     deck.Uuid = fetch["uuid"].ToString();
                 }
             }
-            catch (PostgresException pe)
+            catch (Exception e)
             {
-                Console.WriteLine(pe.Message);
-                Console.WriteLine(pe.StackTrace);
-
-                return deck;
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
+                return null;
             }
 
             return deck;
         }
 
-        private static bool ClearDeckCards(string deckUuid)
+        private bool ClearDeckCards(string deckUuid)
         {
-            using var connection = new NpgsqlConnection(ConnectionString.Credentials);
             using var query =
-                new NpgsqlCommand("delete from deck_cards where deck_uuid::text = @deck_uuid", connection);
+                new NpgsqlCommand("delete from deck_cards where deck_uuid::text = @deck_uuid", _connection,
+                    _transaction);
             query.Parameters.AddWithValue("deck_uuid", deckUuid);
-            connection.Open();
             try
             {
                 return query.ExecuteNonQuery() > 0;
             }
-            catch (PostgresException pe)
+            catch (Exception e)
             {
-                Console.WriteLine(pe.Message);
-                Console.WriteLine(pe.StackTrace);
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
                 return false;
             }
         }
 
-        public static List<Card> GetCardsFromDeck(string deckUuid)
+        public List<Card> GetCardsFromDeck(string deckUuid)
         {
             var cards = new List<Card>();
             using var connection = new NpgsqlConnection(ConnectionString.Credentials);
@@ -160,10 +194,10 @@ namespace mtcg.repositories
                     cards.Add(currentCard);
                 }
             }
-            catch (PostgresException pe)
+            catch (Exception e)
             {
-                Console.WriteLine(pe.Message);
-                Console.WriteLine(pe.StackTrace);
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
 
                 return null;
             }
@@ -171,20 +205,19 @@ namespace mtcg.repositories
             return cards;
         }
 
-        public static bool IsCardInDeck(string cardUuid)
+        public bool IsCardInDeck(string cardUuid)
         {
-            using var connection = new NpgsqlConnection(ConnectionString.Credentials);
-            using var query = new NpgsqlCommand("select * from deck_cards where card_uuid::text = @card_uuid",connection);
+            using var query =
+                new NpgsqlCommand("select * from deck_cards where card_uuid::text = @card_uuid", _connection);
             query.Parameters.AddWithValue("card_uuid", cardUuid);
-            connection.Open();
             try
             {
                 return query.ExecuteScalar() != null;
             }
-            catch (PostgresException pe)
+            catch (Exception e)
             {
-                Console.WriteLine(pe.Message);
-                Console.WriteLine(pe.StackTrace);
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
                 return false;
             }
         }

@@ -18,7 +18,8 @@ namespace mtcg.repositories
         public static List<Card> GetStack(string uuid)
         {
             var cards = new List<Card>();
-
+            var cardRepo = new CardRepository();
+            
             var stack = SelectStackByUserId(uuid);
 
             if (stack?.Uuid == null) return null;
@@ -29,9 +30,9 @@ namespace mtcg.repositories
 
             cardUuids.ForEach(cardUuid =>
             {
-                if (CardRepository.SelectCardByUuid(cardUuid) != null)
+                if (cardRepo.GetByUuid(cardUuid) != null)
                 {
-                    cards.Add(CardRepository.SelectCardByUuid(cardUuid));
+                    cards.Add(cardRepo.GetByUuid(cardUuid));
                 }
             });
 
@@ -54,10 +55,12 @@ namespace mtcg.repositories
 
         public static Response BuyPackage(string userUuid)
         {
+            var userRepo = new UserRepository();
+            
             var buyPack = PackageRepository.SellPackage();
             if (buyPack == null) return RTypes.CError("No package available at the moment!", 404);
 
-            var user = UserRepository.SelectUserByUuid(userUuid);
+            var user = userRepo.GetByUuid(userUuid);
             if (user.Coins < buyPack.Price) return RTypes.CError("Not enough coins!", 403);
             ;
             user.Coins -= buyPack.Price;
@@ -70,7 +73,7 @@ namespace mtcg.repositories
             if (!PackageRepository.DeletePackage(buyPack.Uuid))
                 return RTypes.CError("package couldn't be deleted!", 500);
 
-            if (!UserRepository.UpdateUser(user)) return RTypes.CError("User couldn't be updated!", 500);
+            if (!userRepo.UpdateUser(user)) return RTypes.CError("User couldn't be updated!", 500);
             ;
 
             return stackCards.Contains(false)

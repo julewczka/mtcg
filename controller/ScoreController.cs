@@ -9,7 +9,7 @@ namespace mtcg.controller
     {
         public static Response GetScore()
         {
-            var scores = StatsRepository.SelectAllStats();
+            var scores = StatsRepository.GetAllStats();
             var content = new StringBuilder();
             if (scores == null || scores.Count == 0) return RTypes.CError("scoreboard not found", 404);
             scores.ForEach(score => content.Append(JsonSerializer.Serialize(score) + "," + Environment.NewLine));

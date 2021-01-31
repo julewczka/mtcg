@@ -1,17 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Text.Json;
-using BIF.SWE1.Interfaces;
 using mtcg.classes.entities;
 using mtcg.repositories;
 using Npgsql;
 
 namespace mtcg.controller
 {
-    public static class RequestController
+    public class RequestController
     {
-        public static Response HandleRequest(Request request, string payload)
+        private readonly UserRepository _userRepo;
+        public RequestController()
+        {
+            _userRepo = new UserRepository();
+        }
+        
+        public Response HandleRequest(Request request, string payload)
         {
             var protocol = request.Method;
             var resource = request.Url.Segments;
@@ -56,84 +60,95 @@ namespace mtcg.controller
             return response;
         }
 
-        private static Response Get(string token, IReadOnlyList<string> resource)
+        private Response Get(string token, IReadOnlyList<string> resource)
         {
-            if (!IsUserAuthorized(token)) return RTypes.Unauthorized;
+            if (string.IsNullOrEmpty(token)) return RTypes.BadRequest;
+            var user = _userRepo.GetByToken(token);
+            if (!IsUserAuthorized(user)) return RTypes.Unauthorized;
 
             return resource[0] switch
             {
                 "/" => RTypes.CResponse("<h1>Welcome to the Monster Trading Card Game!</h1>", 200,
                     "text/html"),
-                "users" => UserController.Get(token, resource),
+                "users" => new UserController().Get(user, resource),
                 "sessions" => SessionController.GetLogs(),
                 "packages" => PackageController.Get(resource),
-                "stack" => StackController.Get(token),
-                "deck" => DeckController.GetDeckByToken(token),
-                "cards" => CardController.Get(token),
+                "stack" => StackController.Get(user),
+                "deck" => new DeckController().GetDeckByUser(user),
+                "cards" => new CardController().Get(user),
                 "tradings" => new TradingController().Get(resource),
-                "stats" => StatsController.Get(token),
+                "stats" => StatsController.Get(user),
                 "score" => ScoreController.GetScore(),
                 _ => RTypes.NotFoundRequest
             };
         }
 
-        private static Response Post(string token, IReadOnlyList<string> resource, string payload)
+        private Response Post(string token, IReadOnlyList<string> resource, string payload)
         {
+            User user = null;
+            
+            if (!string.IsNullOrEmpty(token)) user = _userRepo.GetByToken(token);
+
             if (resource[0] != "sessions" && resource[0] != "users")
             {
-                if (!IsUserAuthorized(token))
-                    return  RTypes.Unauthorized;
+                if (!IsUserAuthorized(user)) return RTypes.Unauthorized;
             }
 
             if (!IsValidJson(resource[0], payload)) return RTypes.BadRequest;
             return resource[0] switch
             {
-                "users" => UserController.Post(payload),
+                "users" => new UserController().Post(payload),
                 "sessions" => SessionController.Login(payload),
                 "packages" => PackageController.Post(token, payload),
                 "stack" => RTypes.MethodNotAllowed,
-                "deck" => DeckController.CreateDeck(token, payload),
-                "tradings" => new TradingController().Post(token, resource, payload),
-                "transactions" => TransactionController.StartTransaction(resource[1], token),
+                "deck" => new DeckController().CreateDeck(user, payload),
+                "tradings" => new TradingController().Post(user, resource, payload),
+                "transactions" => TransactionController.StartTransaction(resource[1], user),
                 "battles" => BattleController.Post(token),
-                "cards" => RTypes.MethodNotAllowed, //CardController.Post(payload),
+                "cards" => new CardController().Post(payload),
                 "/" => RTypes.MethodNotAllowed,
                 _ => RTypes.NotFoundRequest
             };
         }
 
-        private static Response Put(string token, IReadOnlyList<string> resource, string payload)
+        private Response Put(string token, IReadOnlyList<string> resource, string payload)
         {
-            if (!IsUserAuthorized(token)) return RTypes.Unauthorized;
+            if (string.IsNullOrEmpty(token)) return RTypes.BadRequest;
+            var user = _userRepo.GetByToken(token);
+            if (!IsUserAuthorized(user)) return RTypes.Unauthorized;
+            
             if (resource.Count < 2 && !IsValidJson(resource[0], payload)) return RTypes.BadRequest;
 
             return resource[0] switch
             {
-                "users" => UserController.Put(token, resource[1], payload),
-                "deck" => DeckController.ConfigureDeck(token, payload),
-                "cards" => RTypes.MethodNotAllowed, //CardController.Put(resource[1], payload),
+                "users" => new UserController().Put(user, resource[1], payload),
+                "deck" => new DeckController().ConfigureDeck(user, payload),
+                "cards" => new CardController().Put(resource[1], payload),
                 "sessions" => RTypes.MethodNotAllowed,
                 "/" => RTypes.MethodNotAllowed,
                 _ => RTypes.NotFoundRequest
             };
         }
 
-        private static Response Delete(string token, IReadOnlyList<string> resource)
+        private Response Delete(string token, IReadOnlyList<string> resource)
         {
-            if (!IsUserAuthorized(token)) return RTypes.Unauthorized;
+            if (string.IsNullOrEmpty(token)) return RTypes.BadRequest;
+            var user = _userRepo.GetByToken(token);
+            if (!IsUserAuthorized(user)) return RTypes.Unauthorized;
+            
             if (resource.Count < 2) return RTypes.BadRequest;
             return resource[0] switch
             {
-                "users" => UserController.Delete(token, resource[1]),
-                "cards" => RTypes.MethodNotAllowed, //CardController.Delete(resource[1]),
+                "users" => new UserController().Delete(user, resource[1]),
+                "cards" => new CardController().Delete(resource[1]),
                 "sessions" => RTypes.MethodNotAllowed,
-                "tradings" => new TradingController().Delete(token, resource[1]),
+                "tradings" => new TradingController().Delete(user, resource[1]),
                 "/" => RTypes.MethodNotAllowed,
                 _ => RTypes.NotFoundRequest
             };
         }
 
-        private static bool IsValidJson(string resource, string json)
+        private bool IsValidJson(string resource, string json)
         {
             Console.WriteLine($"JSON:{json}");
             try
@@ -163,11 +178,9 @@ namespace mtcg.controller
             return true;
         }
 
-        private static bool IsUserAuthorized(string token)
+        private bool IsUserAuthorized(User user)
         {
-            if (string.IsNullOrEmpty(token)) return false;
-            var user = UserRepository.SelectUserByToken(token);
-            return (user != null && SessionController.CheckSessionList(user.Username));
+            return user?.Id != null && SessionController.CheckSessionList(user.Username);
         }
     }
 }

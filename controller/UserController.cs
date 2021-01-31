@@ -7,54 +7,60 @@ using mtcg.repositories;
 
 namespace mtcg.controller
 {
-    public static class UserController
+    public class UserController
     {
-        public static Response Put(string token, string username, string payload)
+        private readonly UserRepository _userRepo;
+        public UserController()
         {
-            if (!token.Contains(username) && token != "admin-mtcgToken") return RTypes.Forbidden;
+            _userRepo = new UserRepository();
+        }
+        public Response Put(User user, string username, string payload)
+        {
+            if (!user.Token.Contains(username) && user.Token != "admin-mtcgToken") return RTypes.Forbidden;
 
             var updateUser = JsonSerializer.Deserialize<User>(payload);
             if (updateUser == null) return RTypes.BadRequest;
             updateUser.Username = username;
 
-            return UserRepository.UpdateUser(updateUser)
+            return _userRepo.UpdateUser(updateUser)
                 ? RTypes.Created
                 : RTypes.BadRequest;
         }
 
-        public static Response Post(string payload)
+        public Response Post(string payload)
         {
             var createUser = JsonSerializer.Deserialize<User>(payload);
             if (createUser == null) return RTypes.BadRequest;
             createUser.Name = createUser.Username;
             createUser.Token = createUser.Username + "-mtcgToken";
 
-            return UserRepository.InsertUser(createUser)
+            return _userRepo.AddUser(createUser)
                 ? RTypes.Created
                 : RTypes.BadRequest;
         }
 
-        public static Response Get(string token, IReadOnlyList<string> resource)
+        public Response Get(User user, IReadOnlyList<string> resource)
         {
-            if (resource.Count > 1 && !token.Contains(resource[1])) return RTypes.Forbidden;
-            
+            if (resource.Count > 1 && !user.Token.Contains(resource[1])) return RTypes.Forbidden;
+
+            var deckRepo = new DeckRepository();
             var fetchedUsers = new List<User>();
             var content = new StringBuilder();
 
             switch (resource.Count)
             {
                 case 1:
-                    if (token != "admin-mtcgToken") return RTypes.Forbidden;
-                    fetchedUsers.AddRange(UserRepository.SelectAll());
+                    if (user.Token != "admin-mtcgToken") return RTypes.Forbidden;
+                    fetchedUsers.AddRange(_userRepo.GetAllUsers());
                     fetchedUsers.ForEach(user =>
                         {
-                            user.Deck = DeckRepository.GetDeckByUserUuid(user.Id);
+                            user.Deck = deckRepo.GetDeckByUserUuid(user.Id);
                             content.Append(JsonSerializer.Serialize(user) + "," + Environment.NewLine);
                         }
                     );
                     break;
                 case 2:
-                    var fetchedSingleUser = UserRepository.SelectUserByUsername(resource[1]);
+                    var fetchedSingleUser = _userRepo.GetByUsername(resource[1]);
                     if (fetchedSingleUser == null) return RTypes.NotFoundRequest;
                     content.Append(JsonSerializer.Serialize(fetchedSingleUser) + "," + Environment.NewLine);
                     break;
@@ -65,11 +71,11 @@ namespace mtcg.controller
             return RTypes.CResponse(content.ToString(), 200, "application/json");
         }
 
-        public static Response Delete(string token, string uuid)
+        public Response Delete(User user, string uuid)
         {
-            if (token != "admin-mtcgToken") return RTypes.Forbidden;
+            if (user.Token != "admin-mtcgToken") return RTypes.Forbidden;
 
-            return UserRepository.DeleteUser(uuid)
+            return _userRepo.DeleteUser(uuid)
                 ? RTypes.HttpOk
                 : RTypes.BadRequest;
         }

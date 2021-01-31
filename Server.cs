@@ -45,6 +45,7 @@ namespace mtcg
             using var sr = new StreamReader(stream);
             var rawRequest = new StringBuilder();
             var contentSize = 0;
+            var requestController = new RequestController();
 
             //get header
             while (!sr.EndOfStream)
@@ -67,7 +68,7 @@ namespace mtcg
             var request = new Request(rawRequest.ToString(), contentSize);
             if (request.IsValid)
             {
-                var response = RequestController.HandleRequest(request, content.ToString());
+                var response = requestController.HandleRequest(request, content.ToString());
                 response.Send(stream);
             }
             else

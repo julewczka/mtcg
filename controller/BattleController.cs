@@ -8,14 +8,20 @@ using mtcg.repositories;
 
 namespace mtcg.controller
 {
-    public static class BattleController
+    public class BattleController
     {
         private static readonly List<User> BattleList = new();
         private static readonly object BattleLock = new();
 
+        public BattleController()
+        {
+            
+        }
+        
         public static Response Post(string token)
         {
-            var user = UserRepository.SelectUserByToken(token);
+            var userRepo = new UserRepository();
+            var user = userRepo.GetByToken(token);
             if(BattleList.Count < 2) BattleList.Add(user);
 
             if (BattleList.Count == 2)

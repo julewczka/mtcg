@@ -1,29 +1,36 @@
 using System;
 using System.Text;
 using System.Text.Json;
+using mtcg.classes.entities;
 using mtcg.repositories;
 
 namespace mtcg.controller
 {
-    public static class DeckController
+    public class DeckController
     {
-        public static Response GetDeckByToken(string token)
-        {
-            var user = UserRepository.SelectUserByToken(token);
-            if (user == null) return RTypes.CError("user not found", 404);
+        private readonly DeckRepository _deckRepo;
 
-            var deck = DeckRepository.GetDeckByUserUuid(user.Id);
+        public DeckController()
+        {
+            _deckRepo = new DeckRepository();
+        }
+        public Response GetDeckByUser(User user)
+        {
+            if (user?.Id == null) return RTypes.CError("user not found", 404);
+
+            var deck = _deckRepo.GetDeckByUserUuid(user.Id);
             if (deck?.Uuid == null) return RTypes.CError("deck not found - create one", 404);
 
-            deck.Cards = DeckRepository.GetCardsFromDeck(deck.Uuid);
+            deck.Cards = _deckRepo.GetCardsFromDeck(deck.Uuid);
 
             var content = new StringBuilder(JsonSerializer.Serialize(deck));
             return RTypes.CResponse(content.ToString(), 200, "application/json");
         }
 
-        public static Response CreateDeck(string token, string cardUuids)
+        public Response CreateDeck(User user, string cardUuids)
         {
-            if (GetDeckByToken(token).StatusCode == 200) return RTypes.CError("Deck already created", 405);
+            if (user?.Id == null) return RTypes.Forbidden;
+            if (GetDeckByUser(user).StatusCode == 200) return RTypes.CError("Deck already created", 405);
             
             var removeBrackets =
                 cardUuids
@@ -35,18 +42,19 @@ namespace mtcg.controller
 
             var data = new StringBuilder();
 
-            if (cardUuidsAsArray.Length < 4) return RTypes.BadRequest;
-            var deck = DeckRepository.ConfigureDeck(token, cardUuidsAsArray);
+            if (cardUuidsAsArray.Length < 4) return RTypes.CError("Deck needs atleast 4 cards!", 400);
+            var deck = _deckRepo.ConfigureDeck(user, cardUuidsAsArray);
 
-            if (deck == null) return RTypes.NotFoundRequest;
+            if (deck?.Uuid == null) return RTypes.NotFoundRequest;
             deck.Cards.ForEach(card => data.Append(JsonSerializer.Serialize(card) + "," + Environment.NewLine));
 
             return RTypes.CResponse(data.ToString(), 200, "application/json");
         }
 
-        public static Response ConfigureDeck(string token, string cardUuids)
+        public Response ConfigureDeck(User user, string cardUuids)
         {
-            var data = new StringBuilder();
+            var cardRepo = new CardRepository();
+            
             var removeBrackets =
                 cardUuids
                     .Remove(0, 1)
@@ -58,18 +66,16 @@ namespace mtcg.controller
 
             foreach (var cardUuid in cardUuidsAsArray)
             {
-                var card = CardRepository.SelectCardByUuid(cardUuid);
+                var card = cardRepo.GetByUuid(cardUuid);
                 if (card?.Uuid == null) return RTypes.Forbidden;
 
                 if (StackController.IsLocked(card)) return RTypes.CError($"{card.Uuid} is locked!", 403);
             }
             
-            var deck = DeckRepository.ConfigureDeck(token, cardUuidsAsArray);
-            if (deck == null) return RTypes.NotFoundRequest;
-            
-            deck.Cards.ForEach(card => data.Append(JsonSerializer.Serialize(card) + "," + Environment.NewLine));
-
-            return RTypes.Created;
+            var deck = _deckRepo.ConfigureDeck(user, cardUuidsAsArray);
+            return deck?.Uuid == null ? RTypes.NotFoundRequest : RTypes.Created;
         }
+        
+        //TODO: Add Delete method
     }
 }

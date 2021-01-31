@@ -7,10 +7,10 @@ namespace mtcg.controller
 {
     public static class StatsController
     {
-        public static Response Get(string token)
+        public static Response Get(User user)
         {
-            var stats = StatsRepository.SelectStatsByToken(token);
-            if (stats == null) return RTypes.Forbidden;
+            var stats = StatsRepository.GetByUserUuid(user.Id);
+            if (stats?.StatsUuid == null) return RTypes.Forbidden;
 
             var content = new StringBuilder();
             content.Append(JsonSerializer.Serialize(stats));
@@ -26,7 +26,7 @@ namespace mtcg.controller
                 Losses = 0,
                 Elo = 100,
             };
-            return StatsRepository.InsertStats(createStats);
+            return StatsRepository.AddStats(createStats);
         }
     }
 }

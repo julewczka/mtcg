@@ -117,20 +117,22 @@ namespace mtcg.classes.game.model
 
         private Stats SetupStats(string userUuid)
         {
-            var stats = StatsRepository.SelectStatsByUserUuid(userUuid);
+            var stats = StatsRepository.GetByUserUuid(userUuid);
             if (stats?.UserUuid != null) return stats;
 
             var statsUuid = StatsController.CreateStatsIfNotExist(User1.Id);
-            stats = StatsRepository.SelectStatsByStatsUuid(statsUuid);
+            stats = StatsRepository.GetByStatsUuid(statsUuid);
 
             return stats;
         }
 
         private Response AddCoins(string winnerUuid, string content)
         {
-            var updateUser = UserRepository.SelectUserByUsername(winnerUuid);
+            var userRepo = new UserRepository();
+            
+            var updateUser = userRepo.GetByUsername(winnerUuid);
             updateUser.Coins += 5;
-            return !UserRepository.UpdateUser(updateUser)
+            return !userRepo.UpdateUser(updateUser)
                 ? RTypes.CError("Something went wrong", 403)
                 : RTypes.CResponse(content, 200, "text/plain");
         }

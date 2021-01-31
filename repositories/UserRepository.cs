@@ -7,22 +7,24 @@ using Npgsql;
 
 namespace mtcg.repositories
 {
-    public static class UserRepository
+    public class UserRepository
     {
-        /**
-         * Get all users
-         * returns a list of users
-         */
-        public static IEnumerable<User> SelectAll()
+        private readonly NpgsqlConnection _connection;
+
+        public UserRepository()
         {
+            _connection = new NpgsqlConnection(ConnectionString.Credentials);
+            _connection.Open();
+        }
+
+        public IEnumerable<User> GetAllUsers()
+        {
+            var deckRepo = new DeckRepository();
             var retrievedUsers = new List<User>();
+            using var query = new NpgsqlCommand("select * from \"user\"", _connection);
 
             try
             {
-                using var connection = new NpgsqlConnection(ConnectionString.Credentials);
-                using var query = new NpgsqlCommand("select * from \"user\"", connection);
-                connection.Open();
-
                 var fetch = query.ExecuteReader();
                 while (fetch.Read())
                 {
@@ -37,10 +39,10 @@ namespace mtcg.repositories
                         Coins = double.Parse(fetch["coins"].ToString()),
                     };
 
-                    var deck = DeckRepository.GetDeckByUserUuid(currentUser.Id);
+                    var deck = deckRepo.GetDeckByUserUuid(currentUser.Id);
                     if (deck?.Uuid != null)
                     {
-                        var deckCards = DeckRepository.GetCardsFromDeck(deck.Uuid);
+                        var deckCards = deckRepo.GetCardsFromDeck(deck.Uuid);
                         currentUser.Deck.Uuid = deck.Uuid;
                         currentUser.Deck.Cards = deckCards;
                     }
@@ -48,9 +50,11 @@ namespace mtcg.repositories
                     retrievedUsers.Add(currentUser);
                 }
             }
-            catch (PostgresException)
+            catch (Exception e)
             {
-                retrievedUsers = new List<User>();
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
+                return null;
             }
 
             return retrievedUsers;
@@ -60,14 +64,14 @@ namespace mtcg.repositories
          * Get a single user
          * returns an user object
          */
-        public static User SelectUserByUsername(string username)
+        public User GetByUsername(string username)
         {
             var user = new User();
             try
             {
                 using var connection = new NpgsqlConnection(ConnectionString.Credentials);
-                using var query = new NpgsqlCommand("select * from \"user\" where username = @p", connection);
-                query.Parameters.AddWithValue("p", username);
+                using var query = new NpgsqlCommand("select * from \"user\" where username = @username", connection);
+                query.Parameters.AddWithValue("username", username);
                 connection.Open();
                 var fetch = query.ExecuteReader();
                 while (fetch.Read())
@@ -92,156 +96,137 @@ namespace mtcg.repositories
             return user;
         }
 
-        public static User SelectUserByUuid(string uuid)
+        public User GetByUuid(string uuid)
         {
-
             var user = new User();
 
-            try
-            {
-                using (var connection = new NpgsqlConnection(ConnectionString.Credentials))
-                {
-                    using var query = new NpgsqlCommand("select * from \"user\" where uuid::text = @uuid", connection);
-                    query.Parameters.AddWithValue("uuid", uuid);
-                    connection.Open();
-                    var fetch = query.ExecuteReader();
-                    while (fetch.Read())
-                    {
-                        user.Id = fetch["uuid"].ToString();
-                        user.Username = fetch["username"].ToString();
-                        user.Name = fetch["name"].ToString();
-                        user.Token = fetch["token"].ToString();
-                        user.Bio = fetch["bio"].ToString();
-                        user.Image = fetch["image"].ToString();
-                        user.Coins = string.IsNullOrEmpty(fetch["coins"].ToString())
-                            ? 20
-                            : int.Parse(fetch["coins"].ToString());
-                    }
-                }
-            }
-
-            catch (PostgresException)
-            {
-                return null;
-            }
-
-            return user;
-        }
-
-        public static User SelectUserByToken(string token)
-        {
-
-            var user = new User();
-            try
-            {
-                using (var connection = new NpgsqlConnection(ConnectionString.Credentials))
-                {
-                    using var query = new NpgsqlCommand("select * from \"user\" where token = @token", connection);
-                    query.Parameters.AddWithValue("token", token);
-                    connection.Open();
-                    var fetch = query.ExecuteReader();
-                    while (fetch.Read())
-                    {
-                        user.Id = fetch["uuid"].ToString();
-                        user.Username = fetch["username"].ToString();
-                        user.Name = fetch["name"].ToString();
-                        user.Token = fetch["token"].ToString();
-                        user.Bio = fetch["bio"].ToString();
-                        user.Image = fetch["image"].ToString();
-                        user.Coins = string.IsNullOrEmpty(fetch["coins"].ToString())
-                            ? 20
-                            : int.Parse(fetch["coins"].ToString());
-                    }
-                }
-            }
-
-            catch (PostgresException)
-            {
-                return null;
-            }
-
-            return user;
-        }
-
-        /**
-         * insert a user into database table "user"
-         */
-        public static bool InsertUser(User user)
-        {
-            var success = false;
-            try
-            {
-                using (var connection = new NpgsqlConnection(ConnectionString.Credentials))
-                {
-                    var insertCount = 0;
-                    using var query =
-                        new NpgsqlCommand(
-                            "insert into \"user\"(username, password, name, token) values(@username, @password, @name, @token)",
-                            connection);
-
-                    query.Parameters.AddWithValue("username", user.Username);
-                    query.Parameters.AddWithValue("password", user.Password);
-                    query.Parameters.AddWithValue("name", user.Name);
-                    query.Parameters.AddWithValue("token", user.Token);
-                    connection.Open();
-                    insertCount = query.ExecuteNonQuery();
-                    if (insertCount > 0) success = true;
-                }
-            }
-            catch (PostgresException)
-            {
-                success = false;
-            }
-
-            return success;
-        }
-
-        /**
-         * edit user properties
-         */
-        public static bool UpdateUser(User user)
-        {
-            var success = false;
             using var connection = new NpgsqlConnection(ConnectionString.Credentials);
+            using var query = new NpgsqlCommand("select * from \"user\" where uuid::text = @uuid", connection);
+            query.Parameters.AddWithValue("uuid", uuid);
+            connection.Open();
             try
             {
-                var updateCount = 0;
+                var fetch = query.ExecuteReader();
+                while (fetch.Read())
+                {
+                    user.Id = fetch["uuid"].ToString();
+                    user.Username = fetch["username"].ToString();
+                    user.Name = fetch["name"].ToString();
+                    user.Token = fetch["token"].ToString();
+                    user.Bio = fetch["bio"].ToString();
+                    user.Image = fetch["image"].ToString();
+                    user.Coins = string.IsNullOrEmpty(fetch["coins"].ToString())
+                        ? 20
+                        : int.Parse(fetch["coins"].ToString());
+                }
+            }
+
+            catch (PostgresException)
+            {
+                return null;
+            }
+
+            return user;
+        }
+
+        public User GetByToken(string token)
+        {
+            var user = new User();
+
+            using var connection = new NpgsqlConnection(ConnectionString.Credentials);
+            using var query = new NpgsqlCommand("select * from \"user\" where token = @token", connection);
+            query.Parameters.AddWithValue("token", token);
+            connection.Open();
+            try
+            {
+                var fetch = query.ExecuteReader();
+                while (fetch.Read())
+                {
+                    user.Id = fetch["uuid"].ToString();
+                    user.Username = fetch["username"].ToString();
+                    user.Name = fetch["name"].ToString();
+                    user.Token = fetch["token"].ToString();
+                    user.Bio = fetch["bio"].ToString();
+                    user.Image = fetch["image"].ToString();
+                    user.Coins = string.IsNullOrEmpty(fetch["coins"].ToString())
+                        ? 20
+                        : int.Parse(fetch["coins"].ToString());
+                }
+            }
+
+            catch (PostgresException)
+            {
+                return null;
+            }
+
+            return user;
+        }
+
+        public bool AddUser(User user)
+        {
+            try
+            {
                 using var query =
                     new NpgsqlCommand(
-                        "update \"user\" set name = @name, bio = @bio, image = @image, coins = @coins where username = @username",
-                        connection);
-                query.Parameters.AddWithValue("username", user.Username);
-                query.Parameters.AddWithValue("name", user.Name);
-                query.Parameters.AddWithValue("bio", user.Bio);
-                query.Parameters.AddWithValue("image", user.Image);
-                query.Parameters.AddWithValue("coins", user.Coins);
-                connection.Open();
-                updateCount = query.ExecuteNonQuery();
-                if (updateCount > 0) success = true;
-            }
-            catch (PostgresException)
-            {
-                success = false;
-            }
+                        "insert into \"user\"(username, password, name, token) values(@username, @password, @name, @token)",
+                        _connection);
 
-            return success;
+                query.Parameters.AddWithValue("username", user.Username);
+                query.Parameters.AddWithValue("password", user.Password);
+                query.Parameters.AddWithValue("name", user.Name);
+                query.Parameters.AddWithValue("token", user.Token);
+                return query.ExecuteNonQuery() > 0;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
+                return false;
+            }
+        }
+
+        public bool UpdateUser(User user)
+        {
+            using var connection = new NpgsqlConnection(ConnectionString.Credentials);
+            using var query =
+                new NpgsqlCommand(
+                    "update \"user\" set name = @name, bio = @bio, image = @image, coins = @coins where username = @username",
+                    connection);
+            query.Parameters.AddWithValue("username", user.Username);
+            query.Parameters.AddWithValue("name", user.Name);
+            query.Parameters.AddWithValue("bio", user.Bio);
+            query.Parameters.AddWithValue("image", user.Image);
+            query.Parameters.AddWithValue("coins", user.Coins);
+            connection.Open();
+            try
+            {
+                return query.ExecuteNonQuery() > 0;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
+                return false;
+            }
         }
 
         /**
          * delete user from database if required
          */
-        public static bool DeleteUser(string uuid)
+        public bool DeleteUser(string uuid)
         {
             using var connection = new NpgsqlConnection(ConnectionString.Credentials);
+            using var query = new NpgsqlCommand("delete from \"user\" where uuid::text = @uuid", connection);
+            query.Parameters.AddWithValue("uuid", uuid);
+            connection.Open();
             try
             {
-                using var query = new NpgsqlCommand("delete from \"user\" where uuid::text = @uuid", connection);
-                query.Parameters.AddWithValue("uuid", uuid);
-                connection.Open();
                 return query.ExecuteNonQuery() > 0;
             }
-            catch (PostgresException)
+            catch (Exception e)
             {
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
                 return false;
             }
         }

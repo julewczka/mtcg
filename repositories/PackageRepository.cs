@@ -132,7 +132,9 @@ namespace mtcg.repositories
         
         public static bool CreatePackage(Card[] cards)
         {
-            var transactionCards = cards.Select(CardRepository.InsertCard).ToList();
+            var cardRepo = new CardRepository();
+            
+            var transactionCards = cards.Select(cardRepo.AddCard).ToList();
             if (transactionCards.Contains(false)) return false;
 
             var packUuid = AddPackage();

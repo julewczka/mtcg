@@ -11,13 +11,11 @@ namespace mtcg.controller
     {
         private static readonly List<Card> LockList = new();
 
-        public static Response Get(string token)
+        public static Response Get(User user)
         {
-            var data = new StringBuilder();
-
-            var user = UserRepository.SelectUserByToken(token);
-            if (user == null) return RTypes.NotFoundRequest;
+            if (user?.Id == null) return RTypes.NotFoundRequest;
            
+            var data = new StringBuilder();
             var listStack = StackRepository.GetStack(user.Id);
             if (listStack == null) return RTypes.NotFoundRequest;
             

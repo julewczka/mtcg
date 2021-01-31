@@ -128,16 +128,18 @@ namespace mtcg.repositories
         /// </summary>
         /// <param name="dealUuid">uuid of the trading deal</param>
         /// <param name="offeredCardUuid">uuid of the offered card</param>
-        /// <param name="token">token of the requester</param>
+        /// <param name="requester">user object of requester</param>
         /// <returns>true if transaction success</returns>
-        public bool BeginTrade(string dealUuid, string offeredCardUuid, string token)
+        public bool BeginTrade(string dealUuid, string offeredCardUuid, User requester)
         {
+            var userRepo = new UserRepository();
+            var cardRepo = new CardRepository();
+            
             var success = true;
             var deal = GetDealByUuid(dealUuid);
-            var cardToTrade = CardRepository.SelectCardByUuid(deal.CardToTrade);
-            var trader = UserRepository.SelectUserByUuid(deal.Trader);
+            var cardToTrade = cardRepo.GetByUuid(deal.CardToTrade);
+            var trader = userRepo.GetByUuid(deal.Trader);
             var traderStack = StackRepository.SelectStackByUserId(trader.Id);
-            var requester = UserRepository.SelectUserByToken(token);
             var requesterStack = StackRepository.SelectStackByUserId(requester.Id);
 
             try

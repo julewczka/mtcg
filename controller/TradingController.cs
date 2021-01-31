@@ -11,10 +11,14 @@ namespace mtcg.controller
     {
         private static readonly object TradingLock = new();
         private readonly TradingRepository _tradingRepo;
+        private readonly CardRepository _cardRepo;
+        private readonly DeckRepository _deckRepo;
 
         public TradingController()
         {
             _tradingRepo = new TradingRepository();
+            _cardRepo = new CardRepository();
+            _deckRepo = new DeckRepository();
         }
 
         public Response Get(IReadOnlyList<string> resource)
@@ -42,28 +46,27 @@ namespace mtcg.controller
         }
 
         //TODO: Add PUT method
-        public Response Delete(string token, string tradingUuid)
+        public Response Delete(User user, string tradingUuid)
         {
             var trading = _tradingRepo.GetDealByUuid(tradingUuid);
             if (trading?.Uuid == null) return RTypes.NotFoundRequest;
-            var user = UserRepository.SelectUserByToken(token);
             if (user.Id != trading.Trader) return RTypes.Forbidden;
             return _tradingRepo.DeleteDealByUuid(trading.Uuid) ? RTypes.HttpOk : RTypes.BadRequest;
         }
 
-        public Response Post(string token, IReadOnlyList<string> resource, string payload)
+        public Response Post(User user, IReadOnlyList<string> resource, string payload)
         {
+            if (user?.Id == null) return RTypes.Forbidden;
+
             switch (resource.Count)
             {
                 case 1:
-                    var user = UserRepository.SelectUserByToken(token);
                     var trading = JsonSerializer.Deserialize<Trading>(payload);
-                    
                     if (trading?.Uuid == null) return RTypes.BadRequest;
                     trading.Trader = user.Id;
-                    var offeredCard = CardRepository.SelectCardByUuid(trading.CardToTrade);
+                    var offeredCard = _cardRepo.GetByUuid(trading.CardToTrade);
                     var stack = StackRepository.SelectStackByUserId(trading.Trader);
-                    var validate = CheckDeal(token, offeredCard, stack);
+                    var validate = CheckDeal(offeredCard, stack);
                     if (validate != null) return validate;
 
                     lock (TradingLock)
@@ -75,15 +78,15 @@ namespace mtcg.controller
                     break;
                 case 2:
                     var cleanPayload = payload.Replace("\"", string.Empty);
-                    var validateTrade = CheckTrade(resource[1], cleanPayload, token);
-                    if (validateTrade != null) return validateTrade;
+                    var checkTrade = CheckTrade(resource[1], cleanPayload, user);
+                    if (checkTrade != null) return checkTrade;
                     
                     lock (TradingLock)
                     {
-                        if (!_tradingRepo.BeginTrade(resource[1], cleanPayload, token))
+                        if (!_tradingRepo.BeginTrade(resource[1], cleanPayload, user))
                             return RTypes.CError("transaction failed", 400);
                         
-                        var cardToTrade = CardRepository.SelectCardByUuid(cleanPayload);
+                        var cardToTrade = _cardRepo.GetByUuid(cleanPayload);
                         StackController.RemoveFromLockList(cardToTrade);
                     }
                     
@@ -95,17 +98,16 @@ namespace mtcg.controller
             return RTypes.Created;
         }
 
-        private Response CheckDeal(string token, Card offeredCard, Stack stack)
+        private Response CheckDeal(Card offeredCard, Stack stack)
         {
-            if (UserRepository.SelectUserByToken(token).Id == null) return RTypes.Forbidden;
             if (offeredCard?.Uuid == null) return RTypes.NotFoundRequest;
             if (stack?.Uuid == null) return RTypes.Forbidden;
             if (!StackRepository.IsCardInStack(offeredCard.Uuid, stack.Uuid)) return RTypes.Forbidden;
-            if (DeckRepository.IsCardInDeck(offeredCard.Uuid)) return RTypes.Forbidden;
+            if (_deckRepo.IsCardInDeck(offeredCard.Uuid)) return RTypes.Forbidden;
             return PackageRepository.IsCardInPackages(offeredCard.Uuid) ? RTypes.Forbidden : null;
         }
 
-        private Response CheckTrade(string tradingUuid, string cardUuid, string token)
+        private Response CheckTrade(string tradingUuid, string cardUuid, User newOwner)
         {
             var tradingRepository = new TradingRepository();
             //check if trading deal exists
@@ -115,11 +117,10 @@ namespace mtcg.controller
             if (trading?.CardToTrade == null) return RTypes.NotFoundRequest;
 
             //check if offered card exists
-            var card = CardRepository.SelectCardByUuid(cardUuid);
+            var card = _cardRepo.GetByUuid(cardUuid);
             if (card?.Uuid == null) return RTypes.Forbidden;
 
             //check if trader is the same as the buyer
-            var newOwner = UserRepository.SelectUserByToken(token);
             if (newOwner?.Id == null) return RTypes.Unauthorized;
             if (trading.Trader.Equals(newOwner.Id, StringComparison.CurrentCultureIgnoreCase))
                 return RTypes.BadRequest;
@@ -133,7 +134,7 @@ namespace mtcg.controller
                 return RTypes.CError("Card must be in stack", 403);
             if (PackageRepository.IsCardInPackages(cardUuid))
                 return RTypes.CError("Card mustn't be in package", 403);
-            if (DeckRepository.IsCardInDeck(cardUuid)) return RTypes.CError("Card mustn't be in deck", 403);
+            if (_deckRepo.IsCardInDeck(cardUuid)) return RTypes.CError("Card mustn't be in deck", 403);
 
             //check if offered card meets requirements
             if (!trading.CardType.Equals(card.CardType, StringComparison.CurrentCultureIgnoreCase))

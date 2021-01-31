@@ -72,7 +72,7 @@ namespace mtcg.controller
                     "text/html"),
                 "users" => new UserController().Get(user, resource),
                 "sessions" => SessionController.GetLogs(),
-                "packages" => PackageController.Get(resource),
+                "packages" => new PackageController().Get(resource),
                 "stack" => StackController.Get(user),
                 "deck" => new DeckController().GetDeckByUser(user),
                 "cards" => new CardController().Get(user),
@@ -99,7 +99,7 @@ namespace mtcg.controller
             {
                 "users" => new UserController().Post(payload),
                 "sessions" => SessionController.Login(payload),
-                "packages" => PackageController.Post(token, payload),
+                "packages" => new PackageController().Post(token, payload),
                 "stack" => RTypes.MethodNotAllowed,
                 "deck" => new DeckController().CreateDeck(user, payload),
                 "tradings" => new TradingController().Post(user, resource, payload),

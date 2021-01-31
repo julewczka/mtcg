@@ -56,8 +56,9 @@ namespace mtcg.repositories
         public static Response BuyPackage(string userUuid)
         {
             var userRepo = new UserRepository();
+            var packRepo = new PackageRepository();
             
-            var buyPack = PackageRepository.SellPackage();
+            var buyPack = packRepo.SellPackage();
             if (buyPack == null) return RTypes.CError("No package available at the moment!", 404);
 
             var user = userRepo.GetByUuid(userUuid);
@@ -70,7 +71,7 @@ namespace mtcg.repositories
             if (string.IsNullOrEmpty(stackUuid)) return RTypes.CError("Stack not found!", 404);
 
             var stackCards = buyPack.Cards.Select(card => AddRelationship(card.Uuid, stackUuid)).ToList();
-            if (!PackageRepository.DeletePackage(buyPack.Uuid))
+            if (!packRepo.DeletePackage(buyPack.Uuid))
                 return RTypes.CError("package couldn't be deleted!", 500);
 
             if (!userRepo.UpdateUser(user)) return RTypes.CError("User couldn't be updated!", 500);

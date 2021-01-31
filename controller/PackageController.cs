@@ -7,10 +7,15 @@ using mtcg.repositories;
 
 namespace mtcg.controller
 {
-    public static class PackageController
+    public class PackageController
     {
-        
-        public static Response Get(IReadOnlyList<string> resource)
+        private readonly PackageRepository _packRepo;
+
+        public PackageController()
+        {
+            _packRepo = new PackageRepository();
+        }
+        public Response Get(IReadOnlyList<string> resource)
         {
             var fetchedPacks = new List<Package>();
             var data = new StringBuilder();
@@ -18,7 +23,7 @@ namespace mtcg.controller
             switch (resource.Count)
             {
                 case 1:
-                    fetchedPacks.AddRange(PackageRepository.GetAllPackages());
+                    fetchedPacks.AddRange(_packRepo.GetAllPackages());
                     fetchedPacks.ForEach(pack =>
                     {
                         var package = JsonSerializer.Serialize(pack);
@@ -34,12 +39,12 @@ namespace mtcg.controller
 
             return RTypes.CResponse(data.ToString(), 200, "application/json");
         }
-        public static Response Post(string token, string payload)
+        public Response Post(string token, string payload)
         {
             if (token != "admin-mtcgToken") return RTypes.Forbidden;
 
             var cards = JsonSerializer.Deserialize<Card[]>(payload);
-            return PackageRepository.CreatePackage(cards)
+            return _packRepo.CreatePackage(cards)
                 ? RTypes.Created
                 : RTypes.BadRequest;
         }

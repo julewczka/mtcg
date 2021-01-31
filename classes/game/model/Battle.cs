@@ -21,9 +21,16 @@ namespace mtcg.classes.game.model
         private Stats Stats1 { get; set; }
         private Stats Stats2 { get; set; }
         private readonly StringBuilder _battleLog = new();
+        private readonly PackageRepository _packRepo;
+        private readonly DeckRepository _deckRepo;
+        private readonly UserRepository _userRepo;
         
         public Battle(User player1, User player2)
         {
+            _packRepo = new PackageRepository();
+            _deckRepo = new DeckRepository();
+            _userRepo = new UserRepository();
+            
             if (player1?.Id == null || player2?.Id == null) return;
             
             var nl = Environment.NewLine;
@@ -31,14 +38,14 @@ namespace mtcg.classes.game.model
             _battleLog.Append($"Starter: {User1.Username}{nl}");
             _battleLog.Append($"Second: {User2.Username}{nl}");
 
-            var oldDeck1 = DeckRepository.GetDeckByUserUuid(User1.Id);
-            oldDeck1.Cards = DeckRepository.GetCardsFromDeck(oldDeck1.Uuid);
+            var oldDeck1 = _deckRepo.GetDeckByUserUuid(User1.Id);
+            oldDeck1.Cards = _deckRepo.GetCardsFromDeck(oldDeck1.Uuid);
 
             Deck1 = InitializeDeckInTypes(oldDeck1.Cards);
             _battleLog.Append($"Starter Deck: {Deck1.Uuid} {nl} {ShowDeckInJson(Deck1.Cards)} {nl}");
 
-            var oldDeck2 = DeckRepository.GetDeckByUserUuid(User2.Id);
-            oldDeck2.Cards = DeckRepository.GetCardsFromDeck(oldDeck2.Uuid);
+            var oldDeck2 = _deckRepo.GetDeckByUserUuid(User2.Id);
+            oldDeck2.Cards = _deckRepo.GetCardsFromDeck(oldDeck2.Uuid);
             Deck2 = InitializeDeckInTypes(oldDeck2.Cards);
             _battleLog.Append($"Seconds Deck: {Deck2.Uuid} {nl} {ShowDeckInJson(Deck2.Cards)} {nl}");
 
@@ -128,11 +135,9 @@ namespace mtcg.classes.game.model
 
         private Response AddCoins(string winnerUuid, string content)
         {
-            var userRepo = new UserRepository();
-            
-            var updateUser = userRepo.GetByUsername(winnerUuid);
+            var updateUser = _userRepo.GetByUsername(winnerUuid);
             updateUser.Coins += 5;
-            return !userRepo.UpdateUser(updateUser)
+            return !_userRepo.UpdateUser(updateUser)
                 ? RTypes.CError("Something went wrong", 403)
                 : RTypes.CResponse(content, 200, "text/plain");
         }

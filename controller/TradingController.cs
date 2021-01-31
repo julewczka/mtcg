@@ -13,12 +13,14 @@ namespace mtcg.controller
         private readonly TradingRepository _tradingRepo;
         private readonly CardRepository _cardRepo;
         private readonly DeckRepository _deckRepo;
+        private readonly PackageRepository _packRepo;
 
         public TradingController()
         {
             _tradingRepo = new TradingRepository();
             _cardRepo = new CardRepository();
             _deckRepo = new DeckRepository();
+            _packRepo = new PackageRepository();
         }
 
         public Response Get(IReadOnlyList<string> resource)
@@ -104,7 +106,7 @@ namespace mtcg.controller
             if (stack?.Uuid == null) return RTypes.Forbidden;
             if (!StackRepository.IsCardInStack(offeredCard.Uuid, stack.Uuid)) return RTypes.Forbidden;
             if (_deckRepo.IsCardInDeck(offeredCard.Uuid)) return RTypes.Forbidden;
-            return PackageRepository.IsCardInPackages(offeredCard.Uuid) ? RTypes.Forbidden : null;
+            return _packRepo.IsCardInPackages(offeredCard.Uuid) ? RTypes.Forbidden : null;
         }
 
         private Response CheckTrade(string tradingUuid, string cardUuid, User newOwner)
@@ -132,7 +134,7 @@ namespace mtcg.controller
             //check if Card is in stack, deck or package
             if (!StackRepository.IsCardInStack(cardUuid, newOwnerStack.Uuid))
                 return RTypes.CError("Card must be in stack", 403);
-            if (PackageRepository.IsCardInPackages(cardUuid))
+            if (_packRepo.IsCardInPackages(cardUuid))
                 return RTypes.CError("Card mustn't be in package", 403);
             if (_deckRepo.IsCardInDeck(cardUuid)) return RTypes.CError("Card mustn't be in deck", 403);
 

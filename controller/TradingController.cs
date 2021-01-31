@@ -7,25 +7,30 @@ using mtcg.repositories;
 
 namespace mtcg.controller
 {
-    public static class TradingController
+    public class TradingController
     {
         private static readonly object TradingLock = new();
+        private readonly TradingRepository _tradingRepo;
 
-        public static Response Get(IReadOnlyList<string> resource)
+        public TradingController()
+        {
+            _tradingRepo = new TradingRepository();
+        }
+
+        public Response Get(IReadOnlyList<string> resource)
         {
             var content = new StringBuilder();
-            var tradingRepository = new TradingRepository();
             switch (resource.Count)
             {
                 case 1:
-                    var fetchedTradings = tradingRepository.GetAllDeals();
+                    var fetchedTradings = _tradingRepo.GetAllDeals();
                     if (fetchedTradings.Count <= 0)
                         return RTypes.CError("No trading deals at the moment!", 404);
                     fetchedTradings.ForEach(trading =>
                         content.Append(JsonSerializer.Serialize(trading) + "," + Environment.NewLine));
                     break;
                 case 2:
-                    var fetchedTrading = tradingRepository.GetDealByUuid(resource[1]);
+                    var fetchedTrading = _tradingRepo.GetDealByUuid(resource[1]);
                     if (fetchedTrading?.Uuid == null) return RTypes.NotFoundRequest;
                     content.Append(JsonSerializer.Serialize(fetchedTrading) + "," + Environment.NewLine);
                     break;
@@ -36,20 +41,18 @@ namespace mtcg.controller
             return RTypes.CResponse(content.ToString(), 200, "application/json");
         }
 
-        
-        public static Response Delete(string token, string tradingUuid)
+        //TODO: Add PUT method
+        public Response Delete(string token, string tradingUuid)
         {
-            var tradingRepository = new TradingRepository();
-            var trading = tradingRepository.GetDealByUuid(tradingUuid);
+            var trading = _tradingRepo.GetDealByUuid(tradingUuid);
             if (trading?.Uuid == null) return RTypes.NotFoundRequest;
             var user = UserRepository.SelectUserByToken(token);
             if (user.Id != trading.Trader) return RTypes.Forbidden;
-            return tradingRepository.DeleteDealByUuid(trading.Uuid) ? RTypes.HttpOk : RTypes.BadRequest;
+            return _tradingRepo.DeleteDealByUuid(trading.Uuid) ? RTypes.HttpOk : RTypes.BadRequest;
         }
 
-        public static Response Post(string token, IReadOnlyList<string> resource, string payload)
+        public Response Post(string token, IReadOnlyList<string> resource, string payload)
         {
-            var tradingRepository = new TradingRepository();
             switch (resource.Count)
             {
                 case 1:
@@ -65,7 +68,7 @@ namespace mtcg.controller
 
                     lock (TradingLock)
                     {
-                        if (!tradingRepository.AddDeal(trading)) return RTypes.BadRequest;
+                        if (!_tradingRepo.AddDeal(trading)) return RTypes.BadRequest;
                         StackController.AddToLockList(offeredCard);
                     }
 
@@ -77,7 +80,7 @@ namespace mtcg.controller
                     
                     lock (TradingLock)
                     {
-                        if (!tradingRepository.BeginTrade(resource[1], cleanPayload, token))
+                        if (!_tradingRepo.BeginTrade(resource[1], cleanPayload, token))
                             return RTypes.CError("transaction failed", 400);
                         
                         var cardToTrade = CardRepository.SelectCardByUuid(cleanPayload);
@@ -92,7 +95,7 @@ namespace mtcg.controller
             return RTypes.Created;
         }
 
-        private static Response CheckDeal(string token, Card offeredCard, Stack stack)
+        private Response CheckDeal(string token, Card offeredCard, Stack stack)
         {
             if (UserRepository.SelectUserByToken(token).Id == null) return RTypes.Forbidden;
             if (offeredCard?.Uuid == null) return RTypes.NotFoundRequest;
@@ -102,7 +105,7 @@ namespace mtcg.controller
             return PackageRepository.IsCardInPackages(offeredCard.Uuid) ? RTypes.Forbidden : null;
         }
 
-        private static Response CheckTrade(string tradingUuid, string cardUuid, string token)
+        private Response CheckTrade(string tradingUuid, string cardUuid, string token)
         {
             var tradingRepository = new TradingRepository();
             //check if trading deal exists

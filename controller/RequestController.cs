@@ -70,7 +70,7 @@ namespace mtcg.controller
                 "stack" => StackController.Get(token),
                 "deck" => DeckController.GetDeckByToken(token),
                 "cards" => CardController.Get(token),
-                "tradings" => TradingController.Get(resource),
+                "tradings" => new TradingController().Get(resource),
                 "stats" => StatsController.Get(token),
                 "score" => ScoreController.GetScore(),
                 _ => RTypes.NotFoundRequest
@@ -93,7 +93,7 @@ namespace mtcg.controller
                 "packages" => PackageController.Post(token, payload),
                 "stack" => RTypes.MethodNotAllowed,
                 "deck" => DeckController.CreateDeck(token, payload),
-                "tradings" => TradingController.Post(token, resource, payload),
+                "tradings" => new TradingController().Post(token, resource, payload),
                 "transactions" => TransactionController.StartTransaction(resource[1], token),
                 "battles" => BattleController.Post(token),
                 "cards" => RTypes.MethodNotAllowed, //CardController.Post(payload),
@@ -127,7 +127,7 @@ namespace mtcg.controller
                 "users" => UserController.Delete(token, resource[1]),
                 "cards" => RTypes.MethodNotAllowed, //CardController.Delete(resource[1]),
                 "sessions" => RTypes.MethodNotAllowed,
-                //"tradings" => TradingController.Delete(token, resource[1]),
+                "tradings" => new TradingController().Delete(token, resource[1]),
                 "/" => RTypes.MethodNotAllowed,
                 _ => RTypes.NotFoundRequest
             };

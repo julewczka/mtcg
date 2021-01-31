@@ -98,10 +98,10 @@ namespace mtcg.repositories
             {
                 return query.ExecuteNonQuery() > 0;
             }
-            catch (PostgresException pe)
+            catch (Exception e)
             {
-                Console.WriteLine(pe.Message);
-                Console.WriteLine(pe.StackTrace);
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
                 return false;
             }
         }

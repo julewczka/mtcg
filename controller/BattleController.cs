@@ -12,16 +12,16 @@ namespace mtcg.controller
     {
         private static readonly List<User> BattleList = new();
         private static readonly object BattleLock = new();
+        private readonly UserRepository _userRepo;
 
         public BattleController()
         {
-            
+            _userRepo = new UserRepository();
         }
         
-        public static Response Post(string token)
+        public Response Post(string token)
         {
-            var userRepo = new UserRepository();
-            var user = userRepo.GetByToken(token);
+            var user = _userRepo.GetByToken(token);
             if(BattleList.Count < 2) BattleList.Add(user);
 
             if (BattleList.Count == 2)
@@ -38,7 +38,7 @@ namespace mtcg.controller
             return RTypes.CResponse("waiting...", 200, "text/plain");
         }
 
-        public static List<User> GetBattleList()
+        public IEnumerable<User> GetBattleList()
         {
             return BattleList;
         }

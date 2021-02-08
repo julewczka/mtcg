@@ -81,15 +81,15 @@ namespace mtcg.repositories
             return card;
         }
 
-        public bool AddCard(Card card)
+        public bool AddCard(Card card, NpgsqlConnection conn = null, NpgsqlTransaction trans = null)
         {
-            using var connection = new NpgsqlConnection(ConnectionString.Credentials);
-            connection.Open();
+            using var connection = conn ?? new NpgsqlConnection(ConnectionString.Credentials);
+            if(conn == null) connection.Open();
             connection.TypeMapper.MapEnum<ElementType>("element_type");
             using var query =
                 new NpgsqlCommand(
                     "insert into card(uuid, name, card_type, element_type, damage) values (@uuid,@name,@card_type, @element_type, @damage)",
-                    connection);
+                    connection, trans);
             query.Parameters.AddWithValue("uuid", Guid.Parse(card.Uuid));
             query.Parameters.AddWithValue("name", card.Name);
             query.Parameters.AddWithValue("card_type", card.CardType);

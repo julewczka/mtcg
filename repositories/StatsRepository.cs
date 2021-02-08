@@ -6,9 +6,9 @@ using Npgsql;
 
 namespace mtcg.repositories
 {
-    public static class StatsRepository
+    public class StatsRepository
     {
-        public static List<Stats> GetAllStats()
+        public List<Stats> GetAllStats()
         {
             var score = new List<Stats>();
             using var connection = new NpgsqlConnection(ConnectionString.Credentials);
@@ -33,17 +33,17 @@ namespace mtcg.repositories
                     score.Add(currentStats);
                 }
             }
-            catch (PostgresException pe)
+            catch (Exception e)
             {
-                Console.WriteLine(pe.Message);
-                Console.WriteLine(pe.StackTrace);
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
                 return null;
             }
 
             return score;
         }
 
-        public static Stats GetByUserUuid(string userUuid)
+        public Stats GetByUserUuid(string userUuid)
         {
             var stats = new Stats();
             using var connection = new NpgsqlConnection(ConnectionString.Credentials);
@@ -63,17 +63,17 @@ namespace mtcg.repositories
                     stats.Elo = int.Parse(fetch["elo"].ToString());
                 }
             }
-            catch (PostgresException pe)
+            catch (Exception e)
             {
-                Console.WriteLine(pe.Message);
-                Console.WriteLine(pe.StackTrace);
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
                 return null;
             }
 
             return stats;
         }
 
-        public static Stats GetByStatsUuid(string statsUuid)
+        public Stats GetByStatsUuid(string statsUuid)
         {
             var stats = new Stats();
             using var connection = new NpgsqlConnection(ConnectionString.Credentials);
@@ -93,17 +93,17 @@ namespace mtcg.repositories
                     stats.Elo = int.Parse(fetch["elo"].ToString());
                 }
             }
-            catch (PostgresException pe)
+            catch (Exception e)
             {
-                Console.WriteLine(pe.Message);
-                Console.WriteLine(pe.StackTrace);
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
                 return null;
             }
 
             return stats;
         }
 
-        public static string AddStats(Stats stats)
+        public string AddStats(Stats stats)
         {
             var statsUuid = "";
             using var connection = new NpgsqlConnection(ConnectionString.Credentials);
@@ -124,17 +124,17 @@ namespace mtcg.repositories
                     statsUuid = fetch["stats_uuid"].ToString();
                 }
             }
-            catch (PostgresException pe)
+            catch (Exception e)
             {
-                Console.WriteLine(pe.Message);
-                Console.WriteLine(pe.StackTrace);
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
                 return null;
             }
 
             return statsUuid;
         }
 
-        public static bool UpdateStats(Stats stats)
+        public bool UpdateStats(Stats stats)
         {
             using var connection = new NpgsqlConnection(ConnectionString.Credentials);
             using var query =
@@ -150,10 +150,10 @@ namespace mtcg.repositories
             {
                 return query.ExecuteNonQuery() > 0;
             }
-            catch (PostgresException pe)
+            catch (Exception e)
             {
-                Console.WriteLine(pe.Message);
-                Console.WriteLine(pe.StackTrace);
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
                 return false;
             }
         }

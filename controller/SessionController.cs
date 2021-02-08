@@ -8,20 +8,21 @@ using mtcg.repositories;
 
 namespace mtcg.controller
 {
-    public static class SessionController
+    public class SessionController
     {
         private static readonly object SessionLock = new object();
-
-        /**
-         * List for every logged-in user
-         */
         private static readonly SortedDictionary<string, DateTime> SessionList = new();
+        private readonly SessionRepository _sessionRepo;
+        public SessionController()
+        {
+            _sessionRepo = new SessionRepository();
+        }
 
         /**
          * compare received user credentials with database records
          * add to SessionList after successful comparison
          */
-        public static Response Login(string payload)
+        public Response Login(string payload)
         {
             lock (SessionLock)
             {
@@ -32,7 +33,7 @@ namespace mtcg.controller
 
                 if (CheckSessionList(loginUser.Username)) return RTypes.MethodNotAllowed;
 
-                var retrievedUser = SessionRepository.GetUserByName(loginUser.Username);
+                var retrievedUser = _sessionRepo.GetUserByName(loginUser.Username);
                 if (retrievedUser == null || loginUser.Password != retrievedUser.Password)
                     return RTypes.Unauthorized;
 
@@ -40,14 +41,14 @@ namespace mtcg.controller
                 retrievedUser.Password = string.Empty;
 
                 SessionList.Add(loginUser.Username, timestamp);
-                SessionRepository.LogLogin(loginUser.Username, timestamp);
+                _sessionRepo.LogLogin(loginUser.Username, timestamp);
             }
             return RTypes.CResponse("Authenticated", 200, "text/plain");
         }
 
-        public static Response GetLogs()
+        public Response GetLogs()
         {
-            var logs = SessionRepository.GetLogs();
+            var logs = _sessionRepo.GetLogs();
             var data = new StringBuilder();
             if (logs == null) return RTypes.NotFoundRequest;
 
@@ -60,7 +61,7 @@ namespace mtcg.controller
         /**
          * logout User 2 hours after login
          */
-        private static void CleanSessionList()
+        private void CleanSessionList()
         {
             var now = DateTime.Now;
             foreach (var session in from session in SessionList
@@ -75,7 +76,7 @@ namespace mtcg.controller
         /**
          * checks if user is logged in
          */
-        public static bool CheckSessionList(string username)
+        public bool CheckSessionList(string username)
         {
             var name = string.IsNullOrEmpty(username)
                 ? "empty"

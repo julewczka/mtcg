@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using mtcg.classes.entities;
 using mtcg.types;
 using Npgsql;
@@ -184,10 +183,10 @@ namespace mtcg.repositories
                 return false;
             }
         }
-
         public bool UpdateUser(User user)
         {
             using var connection = new NpgsqlConnection(ConnectionString.Credentials);
+            connection.Open();
             using var query =
                 new NpgsqlCommand(
                     "update \"user\" set name = @name, bio = @bio, image = @image, coins = @coins where username = @username",
@@ -197,7 +196,29 @@ namespace mtcg.repositories
             query.Parameters.AddWithValue("bio", user.Bio);
             query.Parameters.AddWithValue("image", user.Image);
             query.Parameters.AddWithValue("coins", user.Coins);
-            connection.Open();
+            try
+            {
+                return query.ExecuteNonQuery() > 0;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
+                return false;
+            }
+        }
+        
+        public bool UpdateUserForTransaction(User user, NpgsqlConnection conn, NpgsqlTransaction trans)
+        {
+            using var query =
+                new NpgsqlCommand(
+                    "update \"user\" set name = @name, bio = @bio, image = @image, coins = @coins where username = @username",
+                    conn, trans);
+            query.Parameters.AddWithValue("username", user.Username);
+            query.Parameters.AddWithValue("name", user.Name);
+            query.Parameters.AddWithValue("bio", user.Bio);
+            query.Parameters.AddWithValue("image", user.Image);
+            query.Parameters.AddWithValue("coins", user.Coins);
             try
             {
                 return query.ExecuteNonQuery() > 0;

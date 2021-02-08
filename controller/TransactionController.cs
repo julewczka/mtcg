@@ -18,9 +18,13 @@ namespace mtcg.controller
 
         private static Response BuyPackage(User user)
         {
+            var stackRepo = new StackRepository();
+            
             lock (TransactionLock)
             {
-                return user?.Id == null ? RTypes.Unauthorized : StackRepository.BuyPackage(user.Id);
+                return (user?.Id != null && stackRepo.BuyPackage(user.Id))
+                    ? RTypes.Created
+                    : RTypes.CError("Couldn't aquire package!", 400);
             }
         }
     }

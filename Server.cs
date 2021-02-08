@@ -66,17 +66,11 @@ namespace mtcg
             var content = ReadRequestContent(sr, contentSize);
             rawRequest.Append(content);
             var request = new Request(rawRequest.ToString(), contentSize);
-            if (request.IsValid)
-            {
-                var response = requestController.HandleRequest(request, content.ToString());
-                response.Send(stream);
-            }
-            else
-            {
-                var response = RTypes.BadRequest;
-                response.Send(stream);
-            }
+            var response = (request.IsValid)
+                ? requestController.HandleRequest(request, content.ToString())
+                : RTypes.BadRequest;
 
+            response.Send(stream);
             socket.Close();
         }
 

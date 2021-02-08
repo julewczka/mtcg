@@ -5,11 +5,16 @@ using mtcg.repositories;
 
 namespace mtcg.controller
 {
-    public static class StatsController
+    public class StatsController
     {
-        public static Response Get(User user)
+        private readonly StatsRepository _statsRepo;
+        public StatsController()
         {
-            var stats = StatsRepository.GetByUserUuid(user.Id);
+            _statsRepo = new StatsRepository();
+        }
+        public Response Get(User user)
+        {
+            var stats = _statsRepo.GetByUserUuid(user.Id);
             if (stats?.StatsUuid == null) return RTypes.Forbidden;
 
             var content = new StringBuilder();
@@ -17,7 +22,7 @@ namespace mtcg.controller
             return RTypes.CResponse(content.ToString(), 200, "application/json");
         }
         
-        public static string CreateStatsIfNotExist(string userUuid)
+        public string CreateStatsIfNotExist(string userUuid)
         {
             var createStats = new Stats()
             {
@@ -26,7 +31,7 @@ namespace mtcg.controller
                 Losses = 0,
                 Elo = 100,
             };
-            return StatsRepository.AddStats(createStats);
+            return _statsRepo.AddStats(createStats);
         }
     }
 }

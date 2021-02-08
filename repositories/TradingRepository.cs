@@ -12,9 +12,16 @@ namespace mtcg.repositories
     {
         private readonly NpgsqlConnection _connection;
         private readonly NpgsqlTransaction _transaction;
+        private readonly StackRepository _stackRepo;
+        private readonly CardRepository _cardRepo;
+        private readonly UserRepository _userRepo;
 
         public TradingRepository()
         {
+            _stackRepo = new StackRepository();
+            _cardRepo = new CardRepository();
+            _userRepo = new UserRepository();
+            
             _connection = new NpgsqlConnection(ConnectionString.Credentials);
             _connection.Open();
             _transaction = _connection.BeginTransaction();
@@ -132,26 +139,24 @@ namespace mtcg.repositories
         /// <returns>true if transaction success</returns>
         public bool BeginTrade(string dealUuid, string offeredCardUuid, User requester)
         {
-            var userRepo = new UserRepository();
-            var cardRepo = new CardRepository();
-            
+
             var success = true;
             var deal = GetDealByUuid(dealUuid);
-            var cardToTrade = cardRepo.GetByUuid(deal.CardToTrade);
-            var trader = userRepo.GetByUuid(deal.Trader);
-            var traderStack = StackRepository.SelectStackByUserId(trader.Id);
-            var requesterStack = StackRepository.SelectStackByUserId(requester.Id);
+            var cardToTrade = _cardRepo.GetByUuid(deal.CardToTrade);
+            var trader = _userRepo.GetByUuid(deal.Trader);
+            var traderStack = _stackRepo.SelectStackByUserId(trader.Id);
+            var requesterStack = _stackRepo.SelectStackByUserId(requester.Id);
 
             try
             {
                 if (!SwitchCardOwner(requester.Id, cardToTrade.Uuid)) success = false;
                 
-                if (!StackRepository.DeleteCardFromStackByCardUuid(traderStack.Uuid, cardToTrade.Uuid, _connection,
+                if (!_stackRepo.DeleteCardFromStackByCardUuid(traderStack.Uuid, cardToTrade.Uuid, _connection,
                     _transaction)) success = false;
 
                 if (!SwitchCardOwner(trader.Id, offeredCardUuid)) success = false;
                 
-                if (!StackRepository.DeleteCardFromStackByCardUuid(requesterStack.Uuid, offeredCardUuid, _connection,
+                if (!_stackRepo.DeleteCardFromStackByCardUuid(requesterStack.Uuid, offeredCardUuid, _connection,
                     _transaction)) success = false;
 
                 if (!DeleteDeal(dealUuid)) success = false;
@@ -177,7 +182,7 @@ namespace mtcg.repositories
 
         private bool SwitchCardOwner(string userUuid, string cardUuid)
         {
-            return StackRepository.InsertStackCards(userUuid, cardUuid, _connection, _transaction);
+            return _stackRepo.InsertStackCards(userUuid, cardUuid, _connection, _transaction);
         }
 
         private bool DeleteDeal(string tradingUuid)

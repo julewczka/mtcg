@@ -10,9 +10,11 @@ namespace mtcg.controller
     public class RequestController
     {
         private readonly UserRepository _userRepo;
+        private readonly SessionController _sessionCtrl;
         public RequestController()
         {
             _userRepo = new UserRepository();
+            _sessionCtrl = new SessionController();
         }
         
         public Response HandleRequest(Request request, string payload)
@@ -71,14 +73,14 @@ namespace mtcg.controller
                 "/" => RTypes.CResponse("<h1>Welcome to the Monster Trading Card Game!</h1>", 200,
                     "text/html"),
                 "users" => new UserController().Get(user, resource),
-                "sessions" => SessionController.GetLogs(),
+                "sessions" => new SessionController().GetLogs(),
                 "packages" => new PackageController().Get(resource),
-                "stack" => StackController.Get(user),
+                "stack" => new StackController().Get(user),
                 "deck" => new DeckController().GetDeckByUser(user),
                 "cards" => new CardController().Get(user),
                 "tradings" => new TradingController().Get(resource),
-                "stats" => StatsController.Get(user),
-                "score" => ScoreController.GetScore(),
+                "stats" => new StatsController().Get(user),
+                "score" => new ScoreController().GetScore(),
                 _ => RTypes.NotFoundRequest
             };
         }
@@ -98,13 +100,13 @@ namespace mtcg.controller
             return resource[0] switch
             {
                 "users" => new UserController().Post(payload),
-                "sessions" => SessionController.Login(payload),
+                "sessions" => new SessionController().Login(payload),
                 "packages" => new PackageController().Post(token, payload),
                 "stack" => RTypes.MethodNotAllowed,
                 "deck" => new DeckController().CreateDeck(user, payload),
                 "tradings" => new TradingController().Post(user, resource, payload),
                 "transactions" => TransactionController.StartTransaction(resource[1], user),
-                "battles" => BattleController.Post(token),
+                "battles" => new BattleController().Post(token),
                 "cards" => new CardController().Post(payload),
                 "/" => RTypes.MethodNotAllowed,
                 _ => RTypes.NotFoundRequest
@@ -180,7 +182,7 @@ namespace mtcg.controller
 
         private bool IsUserAuthorized(User user)
         {
-            return user?.Id != null && SessionController.CheckSessionList(user.Username);
+            return user?.Id != null && _sessionCtrl.CheckSessionList(user.Username);
         }
     }
 }

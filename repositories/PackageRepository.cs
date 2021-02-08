@@ -2,21 +2,16 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using mtcg.classes.entities;
+using mtcg.interfaces;
 using mtcg.types;
 using Npgsql;
 
 namespace mtcg.repositories
 {
-    public class PackageRepository
+    public class PackageRepository : IRepository<Package>
     {
-        private readonly NpgsqlConnection _connection;
-        private readonly NpgsqlTransaction _transaction;
-
         public PackageRepository()
         {
-            _connection = new NpgsqlConnection();
-            _connection.Open();
-            _transaction = _connection.BeginTransaction();
         }
 
         public Package SellPackage()
@@ -28,7 +23,9 @@ namespace mtcg.repositories
         public List<Package> GetAllPackages()
         {
             var packages = new List<Package>();
-            using var query = new NpgsqlCommand("select * from packages", _connection);
+            using var conn = new NpgsqlConnection(ConnectionString.Credentials);
+            using var query = new NpgsqlCommand("select * from packages", conn);
+            conn.Open();
             try
             {
                 var fetch = query.ExecuteReader();
@@ -53,10 +50,10 @@ namespace mtcg.repositories
             return packages;
         }
 
-        public bool DeletePackage(string packUuid)
+        public bool DeletePackage(string packUuid, NpgsqlConnection conn, NpgsqlTransaction trans)
         {
-            if (!DestroyPackRelation(packUuid)) return false;
-            using var query = new NpgsqlCommand("delete from packages where uuid::text = @uuid", _connection);
+            if (!DestroyPackRelation(packUuid, conn, trans)) return false;
+            using var query = new NpgsqlCommand("delete from packages where uuid::text = @uuid", conn, trans);
             query.Parameters.AddWithValue("uuid", packUuid);
             try
             {
@@ -72,10 +69,12 @@ namespace mtcg.repositories
 
         public bool IsCardInPackages(string cardUuid)
         {
+            using var conn = new NpgsqlConnection(ConnectionString.Credentials);
+            conn.Open();
             using var query =
                 new NpgsqlCommand(
                     "select * from pack_cards where card_uuid::text = @card_uuid",
-                    _connection);
+                    conn);
             query.Parameters.AddWithValue("card_uuid", cardUuid);
             try
             {
@@ -89,10 +88,10 @@ namespace mtcg.repositories
             }
         }
 
-        private bool DestroyPackRelation(string packUuid)
+        private bool DestroyPackRelation(string packUuid, NpgsqlConnection conn, NpgsqlTransaction trans)
         {
             using var query =
-                new NpgsqlCommand("delete from pack_cards where pack_uuid::text = @pack_uuid", _connection);
+                new NpgsqlCommand("delete from pack_cards where pack_uuid::text = @pack_uuid", conn, trans);
             query.Parameters.AddWithValue("pack_uuid", packUuid);
             try
             {
@@ -109,10 +108,12 @@ namespace mtcg.repositories
         private List<Card> GetCardsFromPack(string uuid)
         {
             var cards = new List<Card>();
+            using var conn = new NpgsqlConnection(ConnectionString.Credentials);
+            conn.Open();
             using var query =
                 new NpgsqlCommand(
                     "select * from card join pack_cards pc on card.uuid = pc.card_uuid where pack_uuid::text = @uuid",
-                    _connection);
+                    conn);
             query.Parameters.AddWithValue("uuid", uuid);
             try
             {
@@ -144,35 +145,39 @@ namespace mtcg.repositories
         {
             var cardRepo = new CardRepository();
             var success = true;
+            using var conn = new NpgsqlConnection(ConnectionString.Credentials);
+            conn.Open();
+            var trans = conn.BeginTransaction();
             try
             {
-                var transactionCards = cards.Select(cardRepo.AddCard).ToList();
+                var transactionCards = cards.Select(card => cardRepo.AddCard(card, conn, trans)).ToList();
                 if (transactionCards.Contains(false)) success = false;
 
-                var packUuid = AddPackage();
+                var packUuid = AddPackage(conn, trans);
                 if (string.IsNullOrEmpty(packUuid)) success = false;
 
-                var transactionPackCards = cards.Select(card => AddRelationship(packUuid, card.Uuid)).ToList();
+                var transactionPackCards =
+                    cards.Select(card => AddRelationship(packUuid, card.Uuid, conn, trans)).ToList();
                 if (transactionCards.Contains(false) || (transactionPackCards.Contains(false))) success = false;
 
-                if (!success) _transaction.Rollback();
-                _transaction.Commit();
+                if (!success) trans.Rollback();
+                trans.Commit();
             }
             catch (Exception e)
             {
                 Console.WriteLine(e.Message);
                 Console.WriteLine(e.StackTrace);
-                _transaction.Rollback();
+                trans.Rollback();
             }
 
             return success;
         }
 
-        private string AddPackage()
+        private string AddPackage(NpgsqlConnection conn, NpgsqlTransaction trans)
         {
             var uuid = "";
-            using var query = new NpgsqlCommand("insert into packages default values returning uuid", _connection,
-                _transaction);
+            using var query = new NpgsqlCommand("insert into packages default values returning uuid", conn,
+                trans);
             try
             {
                 var fetch = query.ExecuteReader();
@@ -191,13 +196,13 @@ namespace mtcg.repositories
             return uuid;
         }
 
-        private bool AddRelationship(string packUuid, string cardUuid)
+        private bool AddRelationship(string packUuid, string cardUuid, NpgsqlConnection conn, NpgsqlTransaction trans)
         {
             if (string.IsNullOrEmpty(cardUuid)) return false;
 
             using var query =
                 new NpgsqlCommand("insert into pack_cards(pack_uuid, card_uuid) values (@pack_uuid, @card_uuid)",
-                    _connection, _transaction);
+                    conn, trans);
             query.Parameters.AddWithValue("pack_uuid", Guid.Parse(packUuid));
             query.Parameters.AddWithValue("card_uuid", Guid.Parse(cardUuid));
             try

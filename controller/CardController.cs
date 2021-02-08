@@ -10,10 +10,12 @@ namespace mtcg.controller
     public class CardController
     {
         private readonly CardRepository _cardRepo;
+        private readonly StackRepository _stackRepo;
 
         public CardController()
         {
             _cardRepo = new CardRepository();
+            _stackRepo = new StackRepository();
         }
         public Response Get(User user)
         {
@@ -27,7 +29,7 @@ namespace mtcg.controller
                     fetchedCards.ForEach(card => content.Append(JsonSerializer.Serialize(card) + "," + Environment.NewLine));
                     break;
                 default:
-                    var cards = StackRepository.GetStack(user.Id);
+                    var cards = _stackRepo.GetStack(user.Id);
                     content.Append(JsonSerializer.Serialize(cards) + "," + Environment.NewLine);
                     break;
             }

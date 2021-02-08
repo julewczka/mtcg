@@ -14,6 +14,8 @@ namespace mtcg.controller
         private readonly CardRepository _cardRepo;
         private readonly DeckRepository _deckRepo;
         private readonly PackageRepository _packRepo;
+        private readonly StackRepository _stackRepo;
+        private readonly StackController _stackCtrl;
 
         public TradingController()
         {
@@ -21,6 +23,8 @@ namespace mtcg.controller
             _cardRepo = new CardRepository();
             _deckRepo = new DeckRepository();
             _packRepo = new PackageRepository();
+            _stackRepo = new StackRepository();
+            _stackCtrl = new StackController();
         }
 
         public Response Get(IReadOnlyList<string> resource)
@@ -67,14 +71,14 @@ namespace mtcg.controller
                     if (trading?.Uuid == null) return RTypes.BadRequest;
                     trading.Trader = user.Id;
                     var offeredCard = _cardRepo.GetByUuid(trading.CardToTrade);
-                    var stack = StackRepository.SelectStackByUserId(trading.Trader);
+                    var stack = _stackRepo.SelectStackByUserId(trading.Trader);
                     var validate = CheckDeal(offeredCard, stack);
                     if (validate != null) return validate;
 
                     lock (TradingLock)
                     {
                         if (!_tradingRepo.AddDeal(trading)) return RTypes.BadRequest;
-                        StackController.AddToLockList(offeredCard);
+                        _stackCtrl.AddToLockList(offeredCard);
                     }
 
                     break;
@@ -89,7 +93,7 @@ namespace mtcg.controller
                             return RTypes.CError("transaction failed", 400);
                         
                         var cardToTrade = _cardRepo.GetByUuid(cleanPayload);
-                        StackController.RemoveFromLockList(cardToTrade);
+                        _stackCtrl.RemoveFromLockList(cardToTrade);
                     }
                     
                     break;
@@ -104,7 +108,7 @@ namespace mtcg.controller
         {
             if (offeredCard?.Uuid == null) return RTypes.NotFoundRequest;
             if (stack?.Uuid == null) return RTypes.Forbidden;
-            if (!StackRepository.IsCardInStack(offeredCard.Uuid, stack.Uuid)) return RTypes.Forbidden;
+            if (!_stackRepo.IsCardInStack(offeredCard.Uuid, stack.Uuid)) return RTypes.Forbidden;
             if (_deckRepo.IsCardInDeck(offeredCard.Uuid)) return RTypes.Forbidden;
             return _packRepo.IsCardInPackages(offeredCard.Uuid) ? RTypes.Forbidden : null;
         }
@@ -128,11 +132,11 @@ namespace mtcg.controller
                 return RTypes.BadRequest;
 
             //check if buyer has a stack
-            var newOwnerStack = StackRepository.SelectStackByUserId(newOwner.Id);
+            var newOwnerStack = _stackRepo.SelectStackByUserId(newOwner.Id);
             if (newOwnerStack?.Uuid == null) return RTypes.CError("Buyer has no stack", 404);
 
             //check if Card is in stack, deck or package
-            if (!StackRepository.IsCardInStack(cardUuid, newOwnerStack.Uuid))
+            if (!_stackRepo.IsCardInStack(cardUuid, newOwnerStack.Uuid))
                 return RTypes.CError("Card must be in stack", 403);
             if (_packRepo.IsCardInPackages(cardUuid))
                 return RTypes.CError("Card mustn't be in package", 403);

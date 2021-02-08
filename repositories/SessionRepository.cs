@@ -6,14 +6,14 @@ using Npgsql;
 
 namespace mtcg.repositories
 {
-    public static class SessionRepository
+    public class SessionRepository
     {
 
         /**
          * Get all records of the db-table "logins"
          * returns a list of Sessions (username + timestamp)
          */
-        public static List<Session> GetLogs()
+        public List<Session> GetLogs()
         {
             var retrievedLogs = new List<Session>();
             try
@@ -46,7 +46,7 @@ namespace mtcg.repositories
         /**
          * Insert a session (username + timestamp) after each login
          */
-        public static void LogLogin(string username, DateTime timestamp)
+        public void LogLogin(string username, DateTime timestamp)
         {
             try
             {
@@ -70,16 +70,16 @@ namespace mtcg.repositories
         /**
          * Get user by username
          */
-        public static User GetUserByName(string username)
+        public User GetUserByName(string username)
         {
             var user = new User();
             try
             {
                 using (var connection = new NpgsqlConnection(ConnectionString.Credentials))
                 {
-                    using var query = new NpgsqlCommand("select username, password from \"user\" where username = @p",
+                    using var query = new NpgsqlCommand("select username, password from \"user\" where username = @username",
                         connection);
-                    query.Parameters.AddWithValue("p", username);
+                    query.Parameters.AddWithValue("username", username);
                     connection.Open();
                     var fetch = query.ExecuteReader();
                     while (fetch.Read())

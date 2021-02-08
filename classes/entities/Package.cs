@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using BIF.SWE1.Interfaces;
 
 namespace mtcg.classes.entities
 {

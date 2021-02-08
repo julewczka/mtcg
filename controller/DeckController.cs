@@ -9,10 +9,12 @@ namespace mtcg.controller
     public class DeckController
     {
         private readonly DeckRepository _deckRepo;
+        private readonly StackController _stackCtrl;
 
         public DeckController()
         {
             _deckRepo = new DeckRepository();
+            _stackCtrl = new StackController();
         }
         public Response GetDeckByUser(User user)
         {
@@ -69,7 +71,7 @@ namespace mtcg.controller
                 var card = cardRepo.GetByUuid(cardUuid);
                 if (card?.Uuid == null) return RTypes.Forbidden;
 
-                if (StackController.IsLocked(card)) return RTypes.CError($"{card.Uuid} is locked!", 403);
+                if (_stackCtrl.IsLocked(card)) return RTypes.CError($"{card.Uuid} is locked!", 403);
             }
             
             var deck = _deckRepo.ConfigureDeck(user, cardUuidsAsArray);

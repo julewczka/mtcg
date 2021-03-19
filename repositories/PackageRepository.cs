@@ -10,17 +10,19 @@ namespace mtcg.repositories
 {
     public class PackageRepository : IRepository<Package>
     {
+        private readonly CardRepository _cardRepo;
         public PackageRepository()
         {
+            _cardRepo = new CardRepository();
         }
 
         public Package SellPackage()
         {
-            var packages = GetAllPackages();
+            var packages = GetAll();
             return packages.Count == 0 ? null : packages[(new Random()).Next(0, packages.Count)];
         }
 
-        public List<Package> GetAllPackages()
+        public List<Package> GetAll()
         {
             var packages = new List<Package>();
             using var conn = new NpgsqlConnection(ConnectionString.Credentials);
@@ -50,6 +52,62 @@ namespace mtcg.repositories
             return packages;
         }
 
+        public bool Insert(Package pack)
+        {
+            using var conn = new NpgsqlConnection(ConnectionString.Credentials);
+            using var query = new NpgsqlCommand("insert into packages (uuid, price) values (@uuid, @price)", conn);
+            query.Parameters.AddWithValue("uuid", Guid.Parse(pack.Uuid));
+            query.Parameters.AddWithValue("price", pack.Price);
+            conn.Open();
+            try
+            {
+                return query.ExecuteNonQuery() > 0;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
+                return false;
+            }
+        }
+
+        public bool Update(Package pack)
+        {
+            using var conn = new NpgsqlConnection(ConnectionString.Credentials);
+            using var query = new NpgsqlCommand("update packages set price = @price where uuid::text = @uuid", conn);
+            query.Parameters.AddWithValue("uuid", pack.Uuid);
+            query.Parameters.AddWithValue("price", pack.Price);
+            conn.Open();
+            try
+            {
+                return query.ExecuteNonQuery() > 0;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
+                return false;
+            }
+        }
+        
+        public bool Delete(Package pack)
+        {
+            using var conn = new NpgsqlConnection(ConnectionString.Credentials);
+            using var query = new NpgsqlCommand("delete from packages where uuid::text = @uuid", conn);
+            query.Parameters.AddWithValue("uuid", pack.Uuid);
+            conn.Open();
+            try
+            {
+                return query.ExecuteNonQuery() > 0;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
+                return false;
+            }
+        }
+        
         public bool DeletePackage(string packUuid, NpgsqlConnection conn, NpgsqlTransaction trans)
         {
             if (!DestroyPackRelation(packUuid, conn, trans)) return false;
@@ -143,14 +201,13 @@ namespace mtcg.repositories
 
         public bool CreatePackage(Card[] cards)
         {
-            var cardRepo = new CardRepository();
             var success = true;
             using var conn = new NpgsqlConnection(ConnectionString.Credentials);
             conn.Open();
             var trans = conn.BeginTransaction();
             try
             {
-                var transactionCards = cards.Select(card => cardRepo.AddCard(card, conn, trans)).ToList();
+                var transactionCards = cards.Select(card => _cardRepo.AddCard(card, conn, trans)).ToList();
                 if (transactionCards.Contains(false)) success = false;
 
                 var packUuid = AddPackage(conn, trans);

@@ -1,25 +1,21 @@
 using System;
 using System.Collections.Generic;
 using mtcg.classes.entities;
+using mtcg.interfaces;
 using mtcg.types;
 using Npgsql;
 
 namespace mtcg.repositories
 {
-    public class CardRepository
+    public class CardRepository : IRepository<Card>
     {
-        private readonly NpgsqlConnection _connection;
 
-        public CardRepository()
-        {
-            _connection = new NpgsqlConnection(ConnectionString.Credentials);
-            _connection.Open();
-        }
-
-        public IEnumerable<Card> GetAllCards()
+        public List<Card> GetAll()
         {
             var retrievedCards = new List<Card>();
-            using var query = new NpgsqlCommand("select * from card", _connection);
+            using var conn = new NpgsqlConnection(ConnectionString.Credentials);
+            using var query = new NpgsqlCommand("select * from card", conn);
+            conn.Open();
             try
             {
                 var fetch = query.ExecuteReader();
@@ -104,8 +100,31 @@ namespace mtcg.repositories
                 return false;
             }
         }
-        
-        public bool UpdateCard(Card card)
+
+        public bool Insert(Card card)
+        {
+            using var conn = new NpgsqlConnection(ConnectionString.Credentials);
+            conn.TypeMapper.MapEnum<ElementType>("element_type");
+            using var query =
+                new NpgsqlCommand(
+                    "insert into card(uuid, name, card_type, element_type, damage) values (@uuid,@name,@card_type, @element_type, @damage)",
+                    conn);
+            query.Parameters.AddWithValue("uuid", Guid.Parse(card.Uuid));
+            query.Parameters.AddWithValue("name", card.Name);
+            query.Parameters.AddWithValue("card_type", card.CardType);
+            query.Parameters.AddWithValue("element_type", card.ElementType);
+            query.Parameters.AddWithValue("damage", card.Damage);
+            conn.Open();
+            try
+            {
+                return (query.ExecuteNonQuery() > 0);
+            }
+            catch (PostgresException)
+            {
+                return false;
+            }
+        }
+        public bool Update(Card card)
         {
             using var connection = new NpgsqlConnection(ConnectionString.Credentials);
             connection.Open();
@@ -131,10 +150,12 @@ namespace mtcg.repositories
             }
         }
 
-        public bool DeleteCard(string uuid)
+        public bool Delete(Card card)
         {
-            using var query = new NpgsqlCommand("delete from card where uuid::text = @uuid", _connection);
-            query.Parameters.AddWithValue("uuid", uuid);
+            using var conn = new NpgsqlConnection(ConnectionString.Credentials);
+            using var query = new NpgsqlCommand("delete from card where uuid::text = @uuid", conn);
+            query.Parameters.AddWithValue("uuid", card.Uuid);
+            conn.Open();
             try
             {
                 return query.ExecuteNonQuery() > 0;

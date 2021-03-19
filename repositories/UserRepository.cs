@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using mtcg.classes.entities;
+using mtcg.interfaces;
 using mtcg.types;
 using Npgsql;
 
 namespace mtcg.repositories
 {
-    public class UserRepository
+    public class UserRepository: IRepository<User>
     {
         private readonly NpgsqlConnection _connection;
 
@@ -16,7 +17,7 @@ namespace mtcg.repositories
             _connection.Open();
         }
 
-        public IEnumerable<User> GetAllUsers()
+        public List<User> GetAll()
         {
             var deckRepo = new DeckRepository();
             var retrievedUsers = new List<User>();
@@ -58,11 +59,7 @@ namespace mtcg.repositories
 
             return retrievedUsers;
         }
-
-        /**
-         * Get a single user
-         * returns an user object
-         */
+        
         public User GetByUsername(string username)
         {
             var user = new User();
@@ -161,7 +158,7 @@ namespace mtcg.repositories
             return user;
         }
 
-        public bool AddUser(User user)
+        public bool Insert(User user)
         {
             try
             {
@@ -183,7 +180,7 @@ namespace mtcg.repositories
                 return false;
             }
         }
-        public bool UpdateUser(User user)
+        public bool Update(User user)
         {
             using var connection = new NpgsqlConnection(ConnectionString.Credentials);
             connection.Open();
@@ -207,7 +204,7 @@ namespace mtcg.repositories
                 return false;
             }
         }
-        
+
         public bool UpdateUserForTransaction(User user, NpgsqlConnection conn, NpgsqlTransaction trans)
         {
             using var query =
@@ -234,11 +231,11 @@ namespace mtcg.repositories
         /**
          * delete user from database if required
          */
-        public bool DeleteUser(string uuid)
+        public bool Delete(User user)
         {
             using var connection = new NpgsqlConnection(ConnectionString.Credentials);
             using var query = new NpgsqlCommand("delete from \"user\" where uuid::text = @uuid", connection);
-            query.Parameters.AddWithValue("uuid", uuid);
+            query.Parameters.AddWithValue("uuid", user.Id);
             connection.Open();
             try
             {

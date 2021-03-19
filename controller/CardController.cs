@@ -25,7 +25,7 @@ namespace mtcg.controller
             switch (user.Username)
             {
                 case "admin":
-                    fetchedCards.AddRange(_cardRepo.GetAllCards());
+                    fetchedCards.AddRange(_cardRepo.GetAll());
                     fetchedCards.ForEach(card => content.Append(JsonSerializer.Serialize(card) + "," + Environment.NewLine));
                     break;
                 default:
@@ -53,14 +53,16 @@ namespace mtcg.controller
             if (updateCard == null) return RTypes.BadRequest;
             updateCard.Uuid = uuid;
 
-            return _cardRepo.UpdateCard(updateCard)
+            return _cardRepo.Update(updateCard)
                 ? RTypes.Created
                 : RTypes.BadRequest;
         }
 
         public  Response Delete(string uuid)
         {
-            return _cardRepo.DeleteCard(uuid)
+            var deleteCard = _cardRepo.GetByUuid(uuid);
+            if (deleteCard?.Uuid == null) return RTypes.BadRequest;
+            return _cardRepo.Delete(deleteCard)
                 ? RTypes.HttpOk
                 : RTypes.BadRequest;
         }

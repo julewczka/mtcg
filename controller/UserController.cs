@@ -22,7 +22,7 @@ namespace mtcg.controller
             if (updateUser == null) return RTypes.BadRequest;
             updateUser.Username = username;
 
-            return _userRepo.UpdateUser(updateUser)
+            return _userRepo.Update(updateUser)
                 ? RTypes.Created
                 : RTypes.BadRequest;
         }
@@ -34,7 +34,7 @@ namespace mtcg.controller
             createUser.Name = createUser.Username;
             createUser.Token = createUser.Username + "-mtcgToken";
 
-            return _userRepo.AddUser(createUser)
+            return _userRepo.Insert(createUser)
                 ? RTypes.Created
                 : RTypes.BadRequest;
         }
@@ -51,7 +51,7 @@ namespace mtcg.controller
             {
                 case 1:
                     if (user.Token != "admin-mtcgToken") return RTypes.Forbidden;
-                    fetchedUsers.AddRange(_userRepo.GetAllUsers());
+                    fetchedUsers.AddRange(_userRepo.GetAll());
                     fetchedUsers.ForEach(user =>
                         {
                             user.Deck = deckRepo.GetDeckByUserUuid(user.Id);
@@ -74,8 +74,8 @@ namespace mtcg.controller
         public Response Delete(User user, string uuid)
         {
             if (user.Token != "admin-mtcgToken") return RTypes.Forbidden;
-
-            return _userRepo.DeleteUser(uuid)
+            var deleteUser = _userRepo.GetByUuid(uuid);
+            return _userRepo.Delete(deleteUser)
                 ? RTypes.HttpOk
                 : RTypes.BadRequest;
         }

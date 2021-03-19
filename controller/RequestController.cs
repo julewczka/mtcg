@@ -152,7 +152,6 @@ namespace mtcg.controller
 
         private bool IsValidJson(string resource, string json)
         {
-            Console.WriteLine($"JSON:{json}");
             try
             {
                 switch (resource)

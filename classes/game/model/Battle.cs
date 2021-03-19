@@ -24,12 +24,18 @@ namespace mtcg.classes.game.model
         private readonly PackageRepository _packRepo;
         private readonly DeckRepository _deckRepo;
         private readonly UserRepository _userRepo;
+        private readonly StatsRepository _statsRepo;
+        private readonly StatsController _statsCtrl;
+        
         
         public Battle(User player1, User player2)
         {
             _packRepo = new PackageRepository();
             _deckRepo = new DeckRepository();
             _userRepo = new UserRepository();
+            _statsRepo = new StatsRepository();
+
+            _statsCtrl = new StatsController();
             
             if (player1?.Id == null || player2?.Id == null) return;
             
@@ -118,17 +124,17 @@ namespace mtcg.classes.game.model
                 Stats1.Elo -= 5;
             }
 
-            StatsRepository.UpdateStats(Stats1);
-            StatsRepository.UpdateStats(Stats2);
+            _statsRepo.UpdateStats(Stats1);
+            _statsRepo.UpdateStats(Stats2);
         }
 
         private Stats SetupStats(string userUuid)
         {
-            var stats = StatsRepository.GetByUserUuid(userUuid);
+            var stats = _statsRepo.GetByUserUuid(userUuid);
             if (stats?.UserUuid != null) return stats;
 
-            var statsUuid = StatsController.CreateStatsIfNotExist(User1.Id);
-            stats = StatsRepository.GetByStatsUuid(statsUuid);
+            var statsUuid = _statsCtrl.CreateStatsIfNotExist(User1.Id);
+            stats = _statsRepo.GetByStatsUuid(statsUuid);
 
             return stats;
         }
@@ -137,7 +143,7 @@ namespace mtcg.classes.game.model
         {
             var updateUser = _userRepo.GetByUsername(winnerUuid);
             updateUser.Coins += 5;
-            return !_userRepo.UpdateUser(updateUser)
+            return !_userRepo.Update(updateUser)
                 ? RTypes.CError("Something went wrong", 403)
                 : RTypes.CResponse(content, 200, "text/plain");
         }

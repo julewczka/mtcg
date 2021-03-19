@@ -4,7 +4,6 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
-//using BIF.SWE1.Interfaces;
 using mtcg.controller;
 
 namespace mtcg

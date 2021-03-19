@@ -24,7 +24,7 @@ namespace mtcg.controller
             switch (resource.Count)
             {
                 case 1:
-                    fetchedPacks.AddRange(_packRepo.GetAllPackages());
+                    fetchedPacks.AddRange(_packRepo.GetAll());
                     fetchedPacks.ForEach(pack =>
                     {
                         var package = JsonSerializer.Serialize(pack);

@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using BIF.SWE1.Interfaces;
+
 
 namespace mtcg.interfaces
 {
@@ -7,10 +7,16 @@ namespace mtcg.interfaces
     {
         
         /// <summary>
-        /// returns all records of a resource
+        /// returns all records of a resourceN
         /// </summary>
         /// <returns>list of records</returns>
-        List<TResource> GetAllPackages();
-        
+        List<TResource> GetAll();
+
+        bool Insert(TResource resource);
+
+        bool Update(TResource resource);
+
+        bool Delete(TResource resource);
+
     }
 }

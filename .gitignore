@@ -6,3 +6,4 @@ obj/*.json
 obj/*.props
 obj/*.cache
 obj/*.targets
+obj/Debug/

@@ -1,4 +1,5 @@
 # SWE Monster Trading Card Game 
+Semester-Projekt an der FH-Technikum-Wien
 
 ## Datenbank Setup
 
